@@ -10,7 +10,34 @@ This example sets the date for all selected photos to `2021-09-10`, subtracts 1 
 
 **Caution**: This app directly modifies your Photos library database using undocumented features.  It may corrupt, damage, or destroy your Photos library.  Use at your own caution.  I strongly recommend you make a backup of your Photos library before using this script (e.g. use Time Machine).  See also [Warranty](#Warranty). 
 
-# Installation
+## Synopsis
+
+### Add 1 day to the date of each photo
+
+`photos_time_warp --date-delta 1`
+
+or
+
+`photos_time_warp --date-delta "+1 day"`
+
+### Set the date of each photo to 23 April 2020 and add 3 hours to the time
+
+`photos_time_warp --date 2020-04-23 --time-delta "+3 hours"`
+
+or
+
+`photos_time_warp --date 2020-04-23 --time-delta "+03:00:00"`
+
+### Set the time of each photo to 14:30 and set the timezone to UTC +1:00 (Central European Time)
+
+`photos_time_warp --time 14:30 --timezone +01:00`
+
+or
+
+`photos_time_warp --time 14:30 --timezone +0100`
+
+## Installation
+
 I recommend you install `photos_time_warp` with [pipx](https://github.com/pipxproject/pipx). If you use `pipx`, you will not need to create a virtual environment as `pipx` takes care of this. The easiest way to do this on a Mac is to use [homebrew](https://brew.sh/):
 
 - Open `Terminal` (search for `Terminal` in Spotlight or look in `Applications/Utilities`)
@@ -24,7 +51,8 @@ Once you've installed `photos_time_warp` with pipx, to upgrade to the latest ver
     pipx upgrade photos_time_warp
 
 
-# Usage
+## Usage
+
 ```
 $ photos_time_warp --help
 Usage: python -m photos_time_warp [OPTIONS]
@@ -57,7 +85,7 @@ Other options:
   --help               Show this message and exit.
 ```
 
-# Implementation Details
+## Implementation Details
 
 This app is a bit of a hack.  Photos provides a way to change the date and time of a photo using AppleScript but does not provide a way to change the timezone.  Date/time adjustments are completed using AppleScript (via python using [PhotoScript](https://github.com/RhetTbull/PhotoScript)) and timezone adjustments are done by directly modifying the underlying Photos database (e.g. `~/Pictures/Photos\ Library.photoslibrary/database/Photos.sqlite`).  Apple does not document the structure of this database--a sqlite database which is actually a CoreData store--so it's possible this script modifies something it shouldn't (or fails to modify something it should) and thus corrupts the database.  I've spent considerable time reverse engineering the Photos database for the [osxphotos](https://github.com/RhetTbull/osxphotos/) project so I am fairly confident the modifications are safe...but, see the [Warranty](#Warranty).
 
@@ -65,16 +93,15 @@ If you want to peek even further under the hood, read on:
 
 Photos maintains a lock on the database, even when Photos is closed, and the python [sqlite3](https://docs.python.org/3/library/sqlite3.html) API will not open the database while Photo's maintains its lock. This issue is unique to the python sqlite API; sqlite itself has no problem with this.  To get around this limitation, I use a [custom sqlite python wrapper](https://github.com/RhetTbull/photos_time_warp/blob/main/photos_time_warp/sqlite_native.py) that calls the system sqlite library directly using python's python-to-C API.  It's very hacky but appears to work OK (at least in my testing on macOS Catalina).
 
-
-# Contributing
+## Contributing
 
 Feedback and contributions of all kinds welcome!  Please open an [issue](https://github.com/RhetTbull/photos_time_warp/issues) if you would like to suggest enhancements or bug fixes.
 
-# Related Projects
+## Related Projects
 
 - [osxphotos](https://github.com/RhetTbull/osxphotos) export photos and metadata from Apple Photos.
 
-# Warranty 
+## Warranty 
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
