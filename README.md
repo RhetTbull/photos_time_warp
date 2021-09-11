@@ -57,6 +57,15 @@ Other options:
   --help               Show this message and exit.
 ```
 
+# Implementation Details
+
+This app is a bit of a hack.  Photos provides a way to change the date and time of a photo using AppleScript but does not provide a way to change the timezone.  Date/time adjustments are completed using AppleScript (via python using [PhotoScript](https://github.com/RhetTbull/PhotoScript)) and timezone adjustments are done by directly modifying the underlying Photos database (e.g. `~/Pictures/Photos\ Library.photoslibrary/database/Photos.sqlite`).  Apple does not document the structure of this database--a sqlite database which is actually a CoreData store--so it's possible this script modifies something it shouldn't (or fails to modify something it should) and thus corrupts the database.  I've spent considerable time reverse engineering the Photos database for the [osxphotos](https://github.com/RhetTbull/osxphotos/) project so I am fairly confident the modifications are safe...but, see the [Warranty](#Warranty).
+
+If you want to peek even further under the hood, read on:
+
+Photos maintains a lock on the database, even when Photos is closed, and the python [sqlite3](https://docs.python.org/3/library/sqlite3.html) will not open the database while Photo's maintains its lock. This issue is unique to the python sqlite API; sqlite itself has no problem with this.  To get around this limitation, I use a [custom sqlite python wrapper](https://github.com/RhetTbull/photos_time_warp/blob/main/photos_time_warp/sqlite_native.py) that calls the system sqlite library directly using python's python-to-C API.  It's very hacky but appears to work OK (at least in my testing on macOS Catalina).
+
+
 # Contributing
 
 Feedback and contributions of all kinds welcome!  Please open an [issue](https://github.com/RhetTbull/photos_time_warp/issues) if you would like to suggest enhancements or bug fixes.
