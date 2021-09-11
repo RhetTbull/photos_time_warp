@@ -63,7 +63,7 @@ This app is a bit of a hack.  Photos provides a way to change the date and time 
 
 If you want to peek even further under the hood, read on:
 
-Photos maintains a lock on the database, even when Photos is closed, and the python [sqlite3](https://docs.python.org/3/library/sqlite3.html) will not open the database while Photo's maintains its lock. This issue is unique to the python sqlite API; sqlite itself has no problem with this.  To get around this limitation, I use a [custom sqlite python wrapper](https://github.com/RhetTbull/photos_time_warp/blob/main/photos_time_warp/sqlite_native.py) that calls the system sqlite library directly using python's python-to-C API.  It's very hacky but appears to work OK (at least in my testing on macOS Catalina).
+Photos maintains a lock on the database, even when Photos is closed, and the python [sqlite3](https://docs.python.org/3/library/sqlite3.html) API will not open the database while Photo's maintains its lock. This issue is unique to the python sqlite API; sqlite itself has no problem with this.  To get around this limitation, I use a [custom sqlite python wrapper](https://github.com/RhetTbull/photos_time_warp/blob/main/photos_time_warp/sqlite_native.py) that calls the system sqlite library directly using python's python-to-C API.  It's very hacky but appears to work OK (at least in my testing on macOS Catalina).
 
 
 # Contributing
