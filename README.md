@@ -59,7 +59,7 @@ Other options:
 
 # Contributing
 
-Feedback and contributions of all kinds welcome!  Please open an [issue](https://github.com/RhetTbull/exif2findertags/issues) if you would like to suggest enhancements or bug fixes.
+Feedback and contributions of all kinds welcome!  Please open an [issue](https://github.com/RhetTbull/photos_time_warp/issues) if you would like to suggest enhancements or bug fixes.
 
 # Related Projects
 
