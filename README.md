@@ -36,6 +36,12 @@ or
 
 `photos_time_warp --time 14:30 --timezone +0100`
 
+### Subtract 1 week to the date for each photo, add 3 hours to the time, set the timezone to UTC -07:00 (Pacific Daylight Time) and also use exiftool to update the EXIF metadata accordingly in the original file; use --verbose to print additional details
+
+`photos_time_warp --date-delta "-1 week" --time-delta "+3 hours" --timezone -0700 --exiftool --verbose`
+
+For this to work, you'll need to install the third-party [exiftool](https://exiftool.org/) utility.
+
 ## Installation
 
 I recommend you install `photos_time_warp` with [pipx](https://github.com/pipxproject/pipx). If you use `pipx`, you will not need to create a virtual environment as `pipx` takes care of this. The easiest way to do this on a Mac is to use [homebrew](https://brew.sh/):
