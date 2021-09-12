@@ -49,7 +49,7 @@ setup(
         "click==8.0.1",
         "yaspin==2.1.0",
         "cloup==0.11.0",
-        "rich==10.9.0",
+        "rich>=10.6.0",
         "pytimeparse==1.1.8",
         "photoscript==0.1.4",
         "osxphotos==0.42.80",
