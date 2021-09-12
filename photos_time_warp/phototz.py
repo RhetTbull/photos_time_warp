@@ -5,6 +5,7 @@
 
 import pathlib
 import plistlib
+import sys
 from typing import Optional
 
 from osxphotos._constants import (
@@ -15,6 +16,7 @@ from osxphotos._constants import (
 )
 from osxphotos.utils import get_last_library_path, get_system_library_path
 from photoscript import Photo
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from .sqlite_native import execute, query
 from .timezones import Timezone
@@ -97,6 +99,21 @@ class PhotoTimeZoneUpdater:
         self.ASSET_TABLE = _DB_TABLE_NAMES[photos_version]["ASSET"]
 
     def update_photo(self, photo: Photo):
+        """Update the timezone of a photo in the database
+
+        Args:
+            photo: Photo object to update
+        """
+        try:
+            self._update_photo(photo)
+        except Exception as e:
+            self.verbose(f"Error updating {photo.uuid}: {e}")
+
+    @retry(
+        wait=wait_exponential(multiplier=1, min=0.100, max=5),
+        stop=stop_after_attempt(10),
+    )
+    def _update_photo(self, photo: Photo):
         try:
             uuid = photo.uuid
             sql = f"""  SELECT 
@@ -126,4 +143,4 @@ class PhotoTimeZoneUpdater:
                 + f"to {self.tz_name}, offset={self.tz_offset}"
             )
         except Exception as e:
-            print(f"Error updating photo {photo.uuid}: {e}")
+            raise e
