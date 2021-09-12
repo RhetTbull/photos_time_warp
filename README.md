@@ -55,34 +55,47 @@ Once you've installed `photos_time_warp` with pipx, to upgrade to the latest ver
 
 ```
 $ photos_time_warp --help
-Usage: python -m photos_time_warp [OPTIONS]
+Usage: photos_time_warp [OPTIONS]
 
   Adjust date/time/timezone of photos in Apple Photos
 
 Specify which photo properties to change: [at least 1 required]
-  --date DATE          Set date for selected photos. Format is 'YYYY-MM-DD'.
-  --date-delta DELTA   Adjust date for selected photos by DELTA. Format is one
-                       of: '±D days', '±W weeks', '±D' where D is days
-  --time TIME          Set time for selected photos. Format is one of
-                       'HH:MM:SS', 'HH:MM:SS.fff', 'HH:MM'.
-  --time-delta DELTA   Adjust time for selected photos by DELTA time. Format is
-                       one of '±HH:MM:SS', '±H hours' (or hr), '±M minutes' (or
-                       min), '±S seconds' (or sec), '±S' (where S is seconds)
-  --timezone TIMEZONE  Set timezone for selected photos as offset from UTC.
-                       Format is one of '±HH:MM', '±H:MM', or '±HHMM'
+  --date DATE           Set date for selected photos. Format is 'YYYY-MM-DD'.
+  --date-delta DELTA    Adjust date for selected photos by DELTA. Format is one
+                        of: '±D days', '±W weeks', '±D' where D is days
+  --time TIME           Set time for selected photos. Format is one of
+                        'HH:MM:SS', 'HH:MM:SS.fff', 'HH:MM'.
+  --time-delta DELTA    Adjust time for selected photos by DELTA time. Format
+                        is one of '±HH:MM:SS', '±H hours' (or hr), '±M minutes'
+                        (or min), '±S seconds' (or sec), '±S' (where S is
+                        seconds)
+  --timezone TIMEZONE   Set timezone for selected photos as offset from UTC.
+                        Format is one of '±HH:MM', '±H:MM', or '±HHMM'
 
 Settings:
-  -V, --verbose        Show verbose output.
+  -V, --verbose         Show verbose output.
   -L, --library PHOTOS_LIBRARY_PATH
-                       Path to Photos library (e.g. '~/Pictures/Photos\
-                       Library.photoslibrary'. This is not likely needed as
-                       photos_time_warp will usually be able to locate the path
-                       to the open Photos library. Use --library only if you get
-                       an error that the Photos library cannot be located.
+                        Path to Photos library (e.g. '~/Pictures/Photos\
+                        Library.photoslibrary'. This is not likely needed as
+                        photos_time_warp will usually be able to locate the
+                        path to the open Photos library. Use --library only if
+                        you get an error that the Photos library cannot be
+                        located.
+  --exiftool            Use exiftool to also update the date/time/timezone
+                        metadata in the original file in Photos' library. To
+                        use --exiftool, you must have the third-party exiftool
+                        utility installed (see https://exiftool.org/). Using
+                        this option modifies the *original* file of the image
+                        in your Photos library. It is possible for originals to
+                        be missing from disk (for example, if they've not been
+                        downloaded from iCloud); --exiftool will skip those
+                        files which are missing.
+  --exiftool-path PATH  Optional path to exiftool executable (will look in
+                        $PATH if not specified).
 
 Other options:
-  --version            Show the version and exit.
-  --help               Show this message and exit.
+  --version             Show the version and exit.
+  --help                Show this message and exit.
 ```
 
 ## Implementation Details

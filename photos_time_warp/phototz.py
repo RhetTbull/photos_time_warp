@@ -1,5 +1,6 @@
 """ Update the timezone of a photo in Apple Photos' library """
-# WARNING: This is a hack.  It might destroy your Photos library.  Ensure you have a backup before using!
+# WARNING: This is a hack.  It might destroy your Photos library.
+# Ensure you have a backup before using!
 # You have been warned.
 
 import pathlib
@@ -79,7 +80,8 @@ class PhotoTimeZoneUpdater:
 
         self.verbose = verbose or noop
 
-        # get_last_library_path() returns the path to the last Photos library opened but sometimes (rarely) fails on some systems
+        # get_last_library_path() returns the path to the last Photos library
+        # opened but sometimes (rarely) fails on some systems
         try:
             db_path = (
                 library_path or get_last_library_path() or get_system_library_path()
@@ -97,23 +99,31 @@ class PhotoTimeZoneUpdater:
     def update_photo(self, photo: Photo):
         try:
             uuid = photo.uuid
-            sql = f"""SELECT 
+            sql = f"""  SELECT 
                         ZADDITIONALASSETATTRIBUTES.Z_PK, 
                         ZADDITIONALASSETATTRIBUTES.Z_OPT, 
                         ZADDITIONALASSETATTRIBUTES.ZTIMEZONEOFFSET, 
                         ZADDITIONALASSETATTRIBUTES.ZTIMEZONENAME
                         FROM ZADDITIONALASSETATTRIBUTES
-                        JOIN {self.ASSET_TABLE} ON ZADDITIONALASSETATTRIBUTES.ZASSET = {self.ASSET_TABLE}.Z_PK
+                        JOIN {self.ASSET_TABLE} 
+                        ON ZADDITIONALASSETATTRIBUTES.ZASSET = {self.ASSET_TABLE}.Z_PK
                         WHERE {self.ASSET_TABLE}.ZUUID = '{uuid}' 
                 """
             results = query(self.db_path, sql)
             row = next(results)
             z_opt = row.Z_OPT + 1
             z_pk = row.Z_PK
-            sql_update = f"""UPDATE ZADDITIONALASSETATTRIBUTES SET Z_OPT={z_opt}, ZTIMEZONEOFFSET={self.tz_offset}, ZTIMEZONENAME='{self.tz_name}' WHERE Z_PK={z_pk};"""
+            sql_update = f"""   UPDATE ZADDITIONALASSETATTRIBUTES
+                                SET Z_OPT={z_opt}, 
+                                ZTIMEZONEOFFSET={self.tz_offset}, 
+                                ZTIMEZONENAME='{self.tz_name}' 
+                                WHERE Z_PK={z_pk};
+                        """
             results = execute(self.db_path, sql_update)
             self.verbose(
-                f"Updated timezone for photo {photo.filename} ({photo.uuid}) from {row.ZTIMEZONENAME}, offset={row.ZTIMEZONEOFFSET} to {self.tz_name}, offset={self.tz_offset}"
+                f"Updated timezone for photo {photo.filename} ({photo.uuid}) "
+                + f"from {row.ZTIMEZONENAME}, offset={row.ZTIMEZONEOFFSET} "
+                + f"to {self.tz_name}, offset={self.tz_offset}"
             )
         except Exception as e:
             print(f"Error updating photo {photo.uuid}: {e}")

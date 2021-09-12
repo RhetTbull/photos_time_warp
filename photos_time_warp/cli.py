@@ -20,10 +20,11 @@ from cloup import (
     version_option,
 )
 from cloup.constraints import RequireAtLeast, mutually_exclusive
+from osxphotos.exiftool import get_exiftool_path
 from photoscript import PhotosLibrary
 
 from ._version import __version__
-from .exiftool import get_exiftool_path
+from .exif_updater import ExifUpdater
 from .phototz import PhotoTimeZoneUpdater
 from .timeutils import (
     time_string_to_datetime,
@@ -46,7 +47,7 @@ APP_NAME = "photos_time_warp"
 def verbose(message_str, **kwargs):
     if not VERBOSE:
         return
-    print(message_str, **kwargs)
+    click.secho(message_str, **kwargs)
 
 
 def print_help_msg(command):
@@ -219,12 +220,14 @@ formatter_settings = HelpFormatter.settings(
     option(
         "--exiftool",
         is_flag=True,
-        hidden=True,
-        help="Use exiftool to also update the date/time/timezone in the photo file.",
+        help="Use exiftool to also update the date/time/timezone metadata in the original file in Photos' library. "
+        "To use --exiftool, you must have the third-party exiftool utility installed (see https://exiftool.org/). "
+        "Using this option modifies the *original* file of the image in your Photos library. "
+        "It is possible for originals to be missing from disk (for example, if they've not been downloaded from iCloud); "
+        "--exiftool will skip those files which are missing.",
     ),
     option(
         "--exiftool-path",
-        hidden=True,
         type=click.Path(exists=True),
         help="Optional path to exiftool executable (will look in $PATH if not specified).",
     ),
@@ -274,6 +277,11 @@ def cli(
             timezone, verbose=verbose, library_path=library
         )
 
+    if exiftool:
+        exif_updater = ExifUpdater(
+            library_path=library, verbose=verbose, exiftool_path=exiftool_path
+        )
+
     click.echo(f"Processing {len(photos)} {pluralize(len(photos), 'photo', 'photos')}")
     # send progress bar output to /dev/null if verbose to hide the progress bar
     fp = open(os.devnull, "w") if VERBOSE else None
@@ -283,6 +291,14 @@ def cli(
                 update_photo_date_time_(p)
             if timezone:
                 tz_updater.update_photo(p)
+            if exiftool:
+                exif_warn, exif_error = exif_updater.update_photo(
+                    p, timezone_offset=timezone
+                )
+                if exif_warn:
+                    click.secho(f"Warning running exiftool: {exif_warn}", fg="yellow")
+                if exif_error:
+                    click.secho(f"Error running exiftool: {exif_error}", fg="red")
 
     if fp is not None:
         fp.close()
