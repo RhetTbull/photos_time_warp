@@ -47,7 +47,6 @@ setup(
     ],
     install_requires=[
         "click==8.0.1",
-        "yaspin==2.1.0",
         "cloup==0.11.0",
         "rich>=10.6.0",
         "pytimeparse==1.1.8",
