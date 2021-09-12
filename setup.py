@@ -52,6 +52,7 @@ setup(
         "pytimeparse==1.1.8",
         "photoscript==0.1.4",
         "osxphotos==0.42.80",
+        "pyobjc-core",
     ],
     python_requires=">=3.7",
     entry_points={"console_scripts": ["photos_time_warp=photos_time_warp.cli:cli"]},
