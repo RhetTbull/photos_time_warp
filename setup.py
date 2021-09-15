@@ -53,7 +53,7 @@ setup(
         "pytimeparse>=1.1.8,<1.2.0",
         "photoscript>=0.1.4,<0.2.0",
         "pyobjc-core",
-        "tenacity>=8.0.1,<9.0.0",G
+        "tenacity>=8.0.1,<9.0.0",
     ],
     python_requires=">=3.7",
     entry_points={"console_scripts": ["photos_time_warp=photos_time_warp.cli:cli"]},
