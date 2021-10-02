@@ -24,8 +24,9 @@ from osxphotos.exiftool import get_exiftool_path
 from photoscript import PhotosLibrary
 
 from ._version import __version__
+from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .exif_updater import ExifUpdater
-from .phototz import PhotoTimeZoneUpdater
+from .phototz import PhotoTimeZone, PhotoTimeZoneUpdater
 from .timeutils import (
     time_string_to_datetime,
     update_datetime,
@@ -201,6 +202,11 @@ formatter_settings = HelpFormatter.settings(
         help="Set timezone for selected photos as offset from UTC. "
         "Format is one of '±HH:MM', '±H:MM', or '±HHMM'",
     ),
+    option(
+        "--inspect",
+        is_flag=True,
+        help="Print out the date/time/timezone for each selected photo without changing any information.",
+    ),
     constraint=RequireAtLeast(1),
 )
 @constraint(mutually_exclusive, ["date", "date_delta"])
@@ -239,6 +245,7 @@ def cli(
     time,
     time_delta,
     timezone,
+    inspect,
     exiftool,
     exiftool_path,
     verbose_,
@@ -271,6 +278,21 @@ def cli(
         date_delta=date_delta,
         time_delta=time_delta,
     )
+
+    if inspect:
+        tzinfo = PhotoTimeZone(library_path=library)
+        if photos:
+            print(
+                "filename, uuid, photo time (local), photo time, timezone offset, timezone name"
+            )
+        for photo in photos:
+            tz_seconds, tz_str, tz_name = tzinfo.get_timezone(photo)
+            photo_date_local = datetime_naive_to_local(photo.date)
+            photo_date_tz = datetime_to_new_tz(photo_date_local, tz_seconds)
+            click.echo(
+                f"{photo.filename}, {photo.uuid}, {photo_date_local.isoformat()}, {photo_date_tz.isoformat()}, {tz_str}, {tz_name}"
+            )
+        sys.exit(0)
 
     if timezone:
         tz_updater = PhotoTimeZoneUpdater(

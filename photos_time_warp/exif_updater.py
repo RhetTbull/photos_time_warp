@@ -8,6 +8,7 @@ from osxphotos.datetime_utils import datetime_tz_to_utc
 from osxphotos.exiftool import ExifTool
 from photoscript import Photo
 
+from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .timezones import Timezone
 
 
@@ -60,15 +61,20 @@ class ExifUpdater:
 
         self.verbose(f"Updating EXIF data for {photo.filename} ({photo.uuid})")
 
-        photo_date = photo.date
+        photo_date = datetime_naive_to_local(photo.date)
 
         if timezone_offset:
-            offset = format_offset_time(timezone_offset.offset)
+            offset = timezone_offset.offset
         else:
-            offset = format_offset_time(_photo._info["imageTimeZoneOffsetSeconds"])
+            offset = _photo._info["imageTimeZoneOffsetSeconds"]
 
-        # # exiftool expects format to "2015:01:18 12:00:00"
+        photo_date = datetime_to_new_tz(photo_date, offset)
+
+        # exiftool expects format to "2015:01:18 12:00:00"
         datetimeoriginal = photo_date.strftime("%Y:%m:%d %H:%M:%S")
+
+        # exiftool expects format of "-04:00"
+        offset = format_offset_time(offset)
 
         # process date/time and timezone offset
         # Photos exports the following fields and sets modify date to creation date

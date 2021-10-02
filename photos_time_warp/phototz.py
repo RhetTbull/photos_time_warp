@@ -3,10 +3,11 @@
 # Ensure you have a backup before using!
 # You have been warned.
 
+import datetime
+import math
 import pathlib
 import plistlib
-import sys
-from typing import Optional
+from typing import Optional, Tuple
 
 from osxphotos._constants import (
     _DB_TABLE_NAMES,
@@ -65,6 +66,58 @@ def get_photos_version(db_file):
 def noop():
     """No-op function for use as verbose if verbose not set"""
     pass
+
+
+def tz_to_str(tz_seconds: int) -> str:
+    """convert timezone offset in seconds to string in form +00:00 (as offset from GMT)"""
+    sign = "+" if tz_seconds >= 0 else "-"
+    tz_seconds = abs(tz_seconds)
+    # get min and seconds first
+    mm, _ = divmod(tz_seconds, 60)
+    # Get hours
+    hh, mm = divmod(mm, 60)
+    return f"{sign}{hh:02}{mm:02}"
+
+
+class PhotoTimeZone:
+    """Get timezone info for photos"""
+
+    def __init__(
+        self,
+        library_path: Optional[str] = None,
+    ):
+        # get_last_library_path() returns the path to the last Photos library
+        # opened but sometimes (rarely) fails on some systems
+        try:
+            db_path = (
+                library_path or get_last_library_path() or get_system_library_path()
+            )
+        except Exception:
+            db_path = None
+        if not db_path:
+            raise FileNotFoundError("Could not find Photos database path")
+
+        db_path = str(pathlib.Path(db_path) / "database/Photos.sqlite")
+        self.db_path = db_path
+        photos_version = get_photos_version(self.db_path)
+        self.ASSET_TABLE = _DB_TABLE_NAMES[photos_version]["ASSET"]
+
+    def get_timezone(self, photo: Photo) -> Tuple[int, str, str]:
+        """Return (timezone_seconds, timezone_str, timezone_name) of photo"""
+        uuid = photo.uuid
+        sql = f"""  SELECT 
+                    ZADDITIONALASSETATTRIBUTES.ZTIMEZONEOFFSET, 
+                    ZADDITIONALASSETATTRIBUTES.ZTIMEZONENAME
+                    FROM ZADDITIONALASSETATTRIBUTES
+                    JOIN {self.ASSET_TABLE} 
+                    ON ZADDITIONALASSETATTRIBUTES.ZASSET = {self.ASSET_TABLE}.Z_PK
+                    WHERE {self.ASSET_TABLE}.ZUUID = '{uuid}' 
+            """
+        results = query(self.db_path, sql)
+        row = next(results)
+        tz, tzname = (row.ZTIMEZONEOFFSET, row.ZTIMEZONENAME)
+        tz_str = tz_to_str(tz)
+        return tz, tz_str, tzname
 
 
 class PhotoTimeZoneUpdater:

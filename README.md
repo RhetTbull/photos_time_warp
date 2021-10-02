@@ -79,6 +79,8 @@ Specify which photo properties to change: [at least 1 required]
                         seconds)
   --timezone TIMEZONE   Set timezone for selected photos as offset from UTC.
                         Format is one of '±HH:MM', '±H:MM', or '±HHMM'
+  --inspect             Print out the date/time/timezone for each selected
+                        photo without changing any information.
 
 Settings:
   -V, --verbose         Show verbose output.
