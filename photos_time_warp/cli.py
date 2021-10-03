@@ -41,6 +41,9 @@ from .timezones import Timezone
 # if True, shows verbose output, controlled via --verbose flag
 VERBOSE = False
 
+# format for pretty printing date/times
+DATETIME_FORMAT = "%Y:%m:%d %H:%M:%S%z"
+
 # name of the script
 APP_NAME = "photos_time_warp"
 
@@ -290,7 +293,7 @@ def cli(
             photo_date_local = datetime_naive_to_local(photo.date)
             photo_date_tz = datetime_to_new_tz(photo_date_local, tz_seconds)
             click.echo(
-                f"{photo.filename}, {photo.uuid}, {photo_date_local.isoformat()}, {photo_date_tz.isoformat()}, {tz_str}, {tz_name}"
+                f"{photo.filename}, {photo.uuid}, {photo_date_local.strftime(DATETIME_FORMAT)}, {photo_date_tz.strftime(DATETIME_FORMAT)}, {tz_str}, {tz_name}"
             )
         sys.exit(0)
 
@@ -315,7 +318,10 @@ def cli(
                 tz_updater.update_photo(p)
             if exiftool:
                 exif_warn, exif_error = exif_updater.update_photo(
-                    p, timezone_offset=timezone
+                    p,
+                    update_time=time or time_delta,
+                    update_date=date or date_delta,
+                    timezone_offset=timezone,
                 )
                 if exif_warn:
                     click.secho(f"Warning running exiftool: {exif_warn}", fg="yellow")

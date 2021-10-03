@@ -42,9 +42,18 @@ class ExifUpdater:
     def update_photo(
         self,
         photo: Photo,
+        update_time: bool = False,
+        update_date: bool = False,
         timezone_offset: Optional[Timezone] = None,
     ) -> Tuple[str, str]:
-        """Update exif data in photo"""
+        """Update exif data in photo
+        
+        Args:
+            photo: photoscript.Photo object to act on
+            update_time: if True, will update date/time in EXIF
+            update_date: if True, will update date/time in EXIF
+            timezone_offset: if not None, updates OffsetTimeOriginal in EXIF
+        """
 
         # photo is the photoscript.Photo object passed in
         # _photo is the osxphotos.PhotoInfo object for the same photo
@@ -88,15 +97,17 @@ class ExifUpdater:
         # [Keys]          CreationDate                    : 2020:12:10 22:10:10-08:00
         exif = {}
         if _photo.isphoto:
-            exif["EXIF:DateTimeOriginal"] = datetimeoriginal
-            exif["EXIF:CreateDate"] = datetimeoriginal
-            exif["EXIF:OffsetTimeOriginal"] = offset
+            if update_time or update_date:
+                exif["EXIF:DateTimeOriginal"] = datetimeoriginal
+                exif["EXIF:CreateDate"] = datetimeoriginal
+                dateoriginal = photo_date.strftime("%Y:%m:%d")
+                exif["IPTC:DateCreated"] = dateoriginal
+                timeoriginal = photo_date.strftime(f"%H:%M:%S{offset}")
+                exif["IPTC:TimeCreated"] = timeoriginal
 
-            dateoriginal = photo_date.strftime("%Y:%m:%d")
-            exif["IPTC:DateCreated"] = dateoriginal
+            if timezone_offset:
+                exif["EXIF:OffsetTimeOriginal"] = offset
 
-            timeoriginal = photo_date.strftime(f"%H:%M:%S{offset}")
-            exif["IPTC:TimeCreated"] = timeoriginal
         elif _photo.ismovie:
             # QuickTime spec specifies times in UTC
             # QuickTime:CreateDate and ModifyDate are in UTC w/ no timezone
