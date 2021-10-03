@@ -65,9 +65,12 @@ Once you've installed `photos_time_warp` with pipx, to upgrade to the latest ver
 $ photos_time_warp --help
 Usage: photos_time_warp [OPTIONS]
 
-  Adjust date/time/timezone of photos in Apple Photos
+  Adjust date/time/timezone of photos in Apple Photos. Changes will be applied
+  to all photos currently selected in Photos. photos_time_warp cannot operate
+  on photos selected in a Smart Album; select photos in a regular album or in
+  the 'All Photos' view.
 
-Specify which photo properties to change: [at least 1 required]
+Specify which photo properties to change.: [at least 1 required]
   --date DATE           Set date for selected photos. Format is 'YYYY-MM-DD'.
   --date-delta DELTA    Adjust date for selected photos by DELTA. Format is one
                         of: '±D days', '±W weeks', '±D' where D is days

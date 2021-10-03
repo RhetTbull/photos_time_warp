@@ -34,9 +34,11 @@ from .timeutils import (
 )
 from .timezones import Timezone
 
-# from rich.console import Console
-# from rich.markdown import Markdown
+from rich.console import Console
 
+# Set up rich console
+CONSOLE = Console()
+CONSOLE_STDERR = Console(stderr=True)
 
 # if True, shows verbose output, controlled via --verbose flag
 VERBOSE = False
@@ -51,12 +53,27 @@ APP_NAME = "photos_time_warp"
 def verbose(message_str, **kwargs):
     if not VERBOSE:
         return
-    click.secho(message_str, **kwargs)
+    CONSOLE.print(message_str, **kwargs)
 
 
 def print_help_msg(command):
     with Context(command) as ctx:
         click.echo(command.get_help(ctx))
+
+
+def print_error(message):
+    """Print error message to stderr with rich"""
+    CONSOLE_STDERR.print(message, style="bold red")
+
+
+def print_warning(message):
+    """Print warning message to stdout with rich"""
+    CONSOLE.print(message, style="bold yellow")
+
+
+def echo(message):
+    """print to stdout using rich"""
+    CONSOLE.print(message)
 
 
 class DateTimeISO8601(click.ParamType):
@@ -254,7 +271,11 @@ def cli(
     verbose_,
     library,
 ):
-    """Adjust date/time/timezone of photos in Apple Photos"""
+    """Adjust date/time/timezone of photos in Apple Photos.
+    Changes will be applied to all photos currently selected in Photos.
+    photos_time_warp cannot operate on photos selected in a Smart Album;
+    select photos in a regular album or in the 'All Photos' view.
+    """
     global VERBOSE
     VERBOSE = verbose_
 
@@ -265,13 +286,21 @@ def cli(
     try:
         photos = PhotosLibrary().selection
         if not photos:
-            click.echo("No photos selected")
+            print_warning("No photos selected")
             sys.exit(0)
     except Exception as e:
-        click.secho(
-            f"Could not get selected photos. Ensure Photos is open and photos to process are selected. {e}",
-            fg="red",
-        )
+        # AppleScript error -1728 occurs if user attempts to get selected photos in a Smart Album
+        if "(-1728)" in str(e):
+            print_error(
+                "Could not get selected photos. Ensure photos is open and photos are selected. "
+                "If you have selected photos and you see this message, it may be because the selected photos are in a Photos Smart Album. "
+                "photos_time_warp cannot access photos in a Smart Album.  Select the photos in a regular album or in 'All Photos' view. "
+                "Another option is to create a new album using 'File | New Album With Selection' then select the photos in the new album.",
+            )
+        else:
+            print_error(
+                f"Could not get selected photos. Ensure Photos is open and photos to process are selected. {e}",
+            )
         sys.exit(1)
 
     update_photo_date_time_ = partial(
@@ -292,7 +321,7 @@ def cli(
             tz_seconds, tz_str, tz_name = tzinfo.get_timezone(photo)
             photo_date_local = datetime_naive_to_local(photo.date)
             photo_date_tz = datetime_to_new_tz(photo_date_local, tz_seconds)
-            click.echo(
+            echo(
                 f"{photo.filename}, {photo.uuid}, {photo_date_local.strftime(DATETIME_FORMAT)}, {photo_date_tz.strftime(DATETIME_FORMAT)}, {tz_str}, {tz_name}"
             )
         sys.exit(0)
@@ -307,7 +336,7 @@ def cli(
             library_path=library, verbose=verbose, exiftool_path=exiftool_path
         )
 
-    click.echo(f"Processing {len(photos)} {pluralize(len(photos), 'photo', 'photos')}")
+    echo(f"Processing {len(photos)} {pluralize(len(photos), 'photo', 'photos')}")
     # send progress bar output to /dev/null if verbose to hide the progress bar
     fp = open(os.devnull, "w") if VERBOSE else None
     with click.progressbar(photos, file=fp) as bar:
@@ -324,14 +353,14 @@ def cli(
                     timezone_offset=timezone,
                 )
                 if exif_warn:
-                    click.secho(f"Warning running exiftool: {exif_warn}", fg="yellow")
+                    print_warning(f"Warning running exiftool: {exif_warn}")
                 if exif_error:
-                    click.secho(f"Error running exiftool: {exif_error}", fg="red")
+                    print_error(f"Error running exiftool: {exif_error}")
 
     if fp is not None:
         fp.close()
 
-    click.echo(f"Done.")
+    echo("Done.")
 
 
 def update_photo_date_time(photo, date, time, date_delta, time_delta):

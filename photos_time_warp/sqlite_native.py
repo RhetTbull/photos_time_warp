@@ -133,7 +133,7 @@ def query(db_file, sql, params=()):
 def execute(db_file, sql):
     """run a sql statement that might update the db"""
 
-    # this is needed because if the generator returned by query isn't exhausted, the SQL statetment doesn't actually get executed
+    # this is needed because if the generator returned by query isn't exhausted, the SQL statement doesn't actually get executed
 
     results = query(db_file, sql)
     rows = []

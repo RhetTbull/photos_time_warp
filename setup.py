@@ -49,7 +49,7 @@ setup(
         "osxphotos>=0.42.82,<0.43.0",
         "click==8.0.1,<9.0.0",
         "cloup>=0.11.0,<0.12.0",
-        "rich==10.6.0",
+        "rich>=10.6.0,<11.0.0",
         "pytimeparse>=1.1.8,<1.2.0",
         "photoscript>=0.1.4,<0.2.0",
         "pyobjc-core",
