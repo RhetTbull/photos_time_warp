@@ -1,0 +1,25 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "Jmuccigr",
+      "name": "John Muccigrosso",
+      "avatar_url": "https://avatars.githubusercontent.com/u/615115?v=4",
+      "profile": "http://jmuccigr.github.io/",
+      "contributions": [
+        "bug",
+        "ideas"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "photos_time_warp",
+  "projectOwner": "RhetTbull",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}
