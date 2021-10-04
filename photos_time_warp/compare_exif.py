@@ -1,6 +1,7 @@
 """ PhotoCompare class to compare date/time/timezone in Photos to the exif data """
 
-from typing import Callable, List, Optional
+from collections import namedtuple
+from typing import Callable, List, Optional, Tuple
 
 from osxphotos import PhotosDB
 from osxphotos.exiftool import ExifTool
@@ -13,6 +14,30 @@ from .phototz import PhotoTimeZone
 def noop():
     """No-op function for use as verbose if verbose not set"""
     pass
+
+
+def red(msg: str) -> str:
+    """Return red string in rich markdown"""
+    return f"[red]{msg}[/red]"
+
+
+def green(msg: str) -> str:
+    """Return green string in rich markdown"""
+    return f"[green]{msg}[/green]"
+
+
+ExifDiff = namedtuple(
+    "ExifDiff",
+    [
+        "diff",
+        "photos_date",
+        "photos_time",
+        "photos_tz",
+        "exif_date",
+        "exif_time",
+        "exif_tz",
+    ],
+)
 
 
 class PhotoCompare:
@@ -50,9 +75,13 @@ class PhotoCompare:
             exif = ExifTool(filepath=photo_path, exiftool=self.exiftool_path)
             exif_dict = exif.asdict(tag_groups=False)
             exif_date = exif_dict.get("DateTimeOriginal", "")
-            exif_date, exif_time = exif_date.split(" ", 1)
+            try:
+                exif_date, exif_time = exif_date.split(" ", 1)
+            except ValueError:
+                exif_date = exif_date
+                exif_time = ""
             exif_date = exif_date.replace(":", "-")
-            exif_date = exif_date + " " + exif_time
+            exif_date = exif_date + " " + exif_time if exif_time else exif_date
             exif_offset = exif_dict.get("OffsetTimeOriginal", "")
             exif_offset = exif_offset.replace(":", "")
         else:
@@ -60,3 +89,53 @@ class PhotoCompare:
             exif_offset = ""
 
         return [photos_date_str, photos_tz_str, exif_date, exif_offset]
+
+    def compare_exif_with_markup(self, photo: Photo) -> ExifDiff:
+        """Compare date/time/timezone in Photos to the exif data and return an ExifDiff named tuple;
+        adds rich markup to strings to show differences
+
+        Args:
+            photo (Photo): Photo object to compare
+        """
+        photos_date, photos_tz, exif_date, exif_tz = self.compare_exif(photo)
+        diff = False
+        photos_date, photos_time = photos_date.split(" ", 1)
+        try:
+            exif_date, exif_time = exif_date.split(" ", 1)
+        except ValueError:
+            exif_date = exif_date
+            exif_time = ""
+
+        if photos_date != exif_date:
+            photos_date = red(photos_date)
+            exif_date = red(exif_date)
+            diff = True
+        else:
+            photos_date = green(photos_date)
+            exif_date = green(exif_date)
+
+        if photos_time != exif_time:
+            photos_time = red(photos_time)
+            exif_time = red(exif_time)
+            diff = True
+        else:
+            photos_time = green(photos_time)
+            exif_time = green(exif_time)
+
+        if photos_tz != exif_tz:
+            photos_tz = red(photos_tz)
+            exif_tz = red(exif_tz)
+            diff = True
+        else:
+            photos_tz = green(photos_tz)
+            exif_tz = green(exif_tz)
+
+        return ExifDiff(
+            diff,
+            photos_date,
+            photos_time,
+            photos_tz,
+            exif_date,
+            exif_time,
+            exif_tz,
+        )

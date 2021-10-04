@@ -31,7 +31,7 @@ from photoscript import Photo, PhotosLibrary
 from rich.console import Console
 
 from ._version import __version__
-from .compare_exif import PhotoCompare
+from .compare_exif import PhotoCompare, ExifDiff
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .exif_updater import ExifUpdater
 from .phototz import PhotoTimeZone, PhotoTimeZoneUpdater
@@ -370,6 +370,11 @@ def cli(
         time_delta=time_delta,
     )
 
+    update_photo_time_for_new_timezone_ = partial(
+        update_photo_time_for_new_timezone,
+        library_path=library,
+    )
+
     if inspect:
         tzinfo = PhotoTimeZone(library_path=library)
         if photos:
@@ -394,39 +399,14 @@ def cli(
                 "filename, uuid, photo time (Photos), photo time (EXIF), timezone offset (Photos), timezone offset (EXIF)"
             )
         for photo in photos:
-            photos_date, photos_tz, exif_date, exif_tz = photocomp.compare_exif(photo)
-            diff = False
-            photos_date, photos_time = photos_date.split(" ", 1)
-            exif_date, exif_time = exif_date.split(" ", 1)
-
-            if photos_date != exif_date:
-                photos_date = red(photos_date)
-                exif_date = red(exif_date)
-                diff = True
-            else:
-                photos_date = green(photos_date)
-                exif_date = green(exif_date)
-
-            if photos_time != exif_time:
-                photos_time = red(photos_time)
-                exif_time = red(exif_time)
-                diff = True
-            else:
-                photos_time = green(photos_time)
-                exif_time = green(exif_time)
-
-            if photos_tz != exif_tz:
-                photos_tz = red(photos_tz)
-                exif_tz = red(exif_tz)
-                diff = True
-            else:
-                photos_tz = green(photos_tz)
-                exif_tz = green(exif_tz)
-
-            filename = red(photo.filename) if diff else green(photo.filename)
-
+            diff_results = photocomp.compare_exif_with_markup(photo)
+            filename = (
+                red(photo.filename) if diff_results.diff else green(photo.filename)
+            )
             echo(
-                f"{filename}, {photo.uuid}, {photos_date} {photos_time}, {exif_date} {exif_time}, {photos_tz}, {exif_tz}"
+                f"{filename}, {photo.uuid}, "
+                f"{diff_results.photos_date} {diff_results.photos_time}, {diff_results.exif_date} {diff_results.exif_time}, "
+                f"{diff_results.photos_tz}, {diff_results.exif_tz}"
             )
         sys.exit(0)
 
@@ -450,9 +430,7 @@ def cli(
             if match_time:
                 # need to adjust time before the timezone is updated
                 # or the old timezone will be overwritten in the database
-                update_photo_time_for_new_timezone(
-                    library_path=library, photo=p, new_timezone=timezone
-                )
+                update_photo_time_for_new_timezone_(photo=p, new_timezone=timezone)
             if timezone:
                 tz_updater.update_photo(p)
             if exiftool:
@@ -506,11 +484,16 @@ def update_photo_time_for_new_timezone(
     new_photo_date = update_datetime(
         dt=photo_date, time_delta=datetime.timedelta(seconds=delta)
     )
-    photo.date = new_photo_date
-    verbose(
-        f"Adjusted date/time for photo {photo.filename} ({photo.uuid}) to match "
-        f"previous time {photo_date} but in new timezone {new_timezone}."
-    )
+    if photo_date != new_photo_date:
+        photo.date = new_photo_date
+        verbose(
+            f"Adjusted date/time for photo {photo.filename} ({photo.uuid}) to match "
+            f"previous time {photo_date} but in new timezone {new_timezone}."
+        )
+    else:
+        verbose(
+            f"Skipping date/time update for photo {photo.filename} ({photo.uuid}), already matches new timezone {new_timezone}"
+        )
 
 
 def pluralize(count, singular, plural):
