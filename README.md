@@ -45,6 +45,10 @@ or
 
 For this to work, you'll need to install the third-party [exiftool](https://exiftool.org/) utility.
 
+### Set the timezone to UTC +03:00 for each photo but the time the same (that is, don't adjust time for the new timezone)
+
+`photos_time_warp --timezone 0300 --match-time`
+
 ## Installation
 
 I recommend you install `photos_time_warp` with [pipx](https://github.com/pipxproject/pipx). If you use `pipx`, you will not need to create a virtual environment as `pipx` takes care of this. The easiest way to do this on a Mac is to use [homebrew](https://brew.sh/):
