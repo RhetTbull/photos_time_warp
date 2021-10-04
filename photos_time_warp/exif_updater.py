@@ -1,7 +1,7 @@
 """Use exiftool to update exif data in photos """
 
 import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable
 
 from osxphotos import PhotosDB
 from osxphotos.datetime_utils import datetime_tz_to_utc
@@ -23,7 +23,7 @@ class ExifUpdater:
     def __init__(
         self,
         library_path: Optional[str] = None,
-        verbose: Optional[callable] = None,
+        verbose: Optional[Callable] = None,
         exiftool_path: Optional[str] = None,
     ):
         self.library_path = library_path
@@ -34,7 +34,7 @@ class ExifUpdater:
     def update_photo(
         self,
         photo: Photo,
-        update_time: bool = False,
+        update_time: bool = False, # ZZZ remove these
         update_date: bool = False,
         timezone_offset: Optional[Timezone] = None,
     ) -> Tuple[str, str]:

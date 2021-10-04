@@ -100,6 +100,8 @@ Specify which photo properties to change: [at least 1 required]
                             time.
   -i, --inspect             Print out the date/time/timezone for each selected
                             photo without changing any information.
+  -c, --compare-exif        Compare the EXIF date/time/timezone for each
+                            selected photo to the same data in Photos.
 
 Settings:
   -m, --match-time          When used with --timezone, adjusts the photo time

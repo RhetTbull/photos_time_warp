@@ -31,6 +31,7 @@ from photoscript import Photo, PhotosLibrary
 from rich.console import Console
 
 from ._version import __version__
+from .compare_exif import PhotoCompare
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .exif_updater import ExifUpdater
 from .phototz import PhotoTimeZone, PhotoTimeZoneUpdater
@@ -85,6 +86,16 @@ requires_one = RequireExactly(1).rephrased(
     help="requires one",
     error=f"it must be used with:\n" f"{ErrorFmt.param_list}",
 )
+
+
+def red(msg: str) -> str:
+    """Return red string in rich markdown"""
+    return f"[red]{msg}[/red]"
+
+
+def green(msg: str) -> str:
+    """Return green string in rich markdown"""
+    return f"[green]{msg}[/green]"
 
 
 class DateTimeISO8601(click.ParamType):
@@ -251,6 +262,12 @@ formatter_settings = HelpFormatter.settings(
         is_flag=True,
         help="Print out the date/time/timezone for each selected photo without changing any information.",
     ),
+    option(
+        "--compare-exif",
+        "-c",
+        is_flag=True,
+        help="Compare the EXIF date/time/timezone for each selected photo to the same data in Photos.",
+    ),
     constraint=RequireAtLeast(1),
 )
 @constraint(mutually_exclusive, ["date", "date_delta"])
@@ -306,6 +323,7 @@ def cli(
     time_delta,
     timezone,
     inspect,
+    compare_exif,
     match_time,
     exiftool,
     exiftool_path,
@@ -364,6 +382,51 @@ def cli(
             photo_date_tz = datetime_to_new_tz(photo_date_local, tz_seconds)
             echo(
                 f"{photo.filename}, {photo.uuid}, {photo_date_local.strftime(DATETIME_FORMAT)}, {photo_date_tz.strftime(DATETIME_FORMAT)}, {tz_str}, {tz_name}"
+            )
+        sys.exit(0)
+
+    if compare_exif:
+        if photos:
+            photocomp = PhotoCompare(
+                library_path=library, verbose=verbose, exiftool_path=exiftool_path
+            )
+            print(
+                "filename, uuid, photo time (Photos), photo time (EXIF), timezone offset (Photos), timezone offset (EXIF)"
+            )
+        for photo in photos:
+            photos_date, photos_tz, exif_date, exif_tz = photocomp.compare_exif(photo)
+            diff = False
+            photos_date, photos_time = photos_date.split(" ", 1)
+            exif_date, exif_time = exif_date.split(" ", 1)
+
+            if photos_date != exif_date:
+                photos_date = red(photos_date)
+                exif_date = red(exif_date)
+                diff = True
+            else:
+                photos_date = green(photos_date)
+                exif_date = green(exif_date)
+
+            if photos_time != exif_time:
+                photos_time = red(photos_time)
+                exif_time = red(exif_time)
+                diff = True
+            else:
+                photos_time = green(photos_time)
+                exif_time = green(exif_time)
+
+            if photos_tz != exif_tz:
+                photos_tz = red(photos_tz)
+                exif_tz = red(exif_tz)
+                diff = True
+            else:
+                photos_tz = green(photos_tz)
+                exif_tz = green(exif_tz)
+
+            filename = red(photo.filename) if diff else green(photo.filename)
+
+            echo(
+                f"{filename}, {photo.uuid}, {photos_date} {photos_time}, {exif_date} {exif_time}, {photos_tz}, {exif_tz}"
             )
         sys.exit(0)
 
