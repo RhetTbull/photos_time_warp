@@ -31,9 +31,10 @@ from photoscript import Photo, PhotosLibrary
 from rich.console import Console
 
 from ._version import __version__
-from .compare_exif import PhotoCompare, ExifDiff
+from .compare_exif import ExifDiff, PhotoCompare
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .exif_updater import ExifUpdater
+from .photosalbum import PhotosAlbum
 from .phototz import PhotoTimeZone, PhotoTimeZoneUpdater
 from .timeutils import (
     time_string_to_datetime,
@@ -41,6 +42,7 @@ from .timeutils import (
     utc_offset_string_to_seconds,
 )
 from .timezones import Timezone
+from .utils import pluralize
 
 # name of the script
 APP_NAME = "photos_time_warp"
@@ -88,6 +90,7 @@ requires_one = RequireExactly(1).rephrased(
 )
 
 
+# TODO: add these to utils
 def red(msg: str) -> str:
     """Return red string in rich markdown"""
     return f"[red]{msg}[/red]"
@@ -273,7 +276,7 @@ formatter_settings = HelpFormatter.settings(
 @constraint(mutually_exclusive, ["date", "date_delta"])
 @constraint(mutually_exclusive, ["time", "time_delta"])
 @option_group(
-    "Settings",
+    "Options",
     option(
         "--match-time",
         "-m",
@@ -286,6 +289,13 @@ formatter_settings = HelpFormatter.settings(
         "Use --match-time when the camera's time was correct for the time the photo was taken but the "
         "timezone was missing or wrong and you want to adjust the timezone while preserving the photo's time. "
         "See also --timezone.",
+    ),
+    option(
+        "--add-to-album",
+        "-a",
+        metavar="ALBUM",
+        help="When used with --compare, adds any photos with date/time/timezone differences "
+        "between Photos/EXIF to album ALBUM.  If ALBUM does not exist, it will be created.",
     ),
     option("--verbose", "-V", "verbose_", is_flag=True, help="Show verbose output."),
     option(
@@ -315,6 +325,7 @@ formatter_settings = HelpFormatter.settings(
     ),
 )
 @constraint(If("match_time", then=requires_one), ["timezone"])
+@constraint(If("add_to_album", then=requires_one), ["compare_exif"])
 @version_option(version=__version__)
 def cli(
     date,
@@ -325,6 +336,7 @@ def cli(
     inspect,
     compare_exif,
     match_time,
+    add_to_album,
     exiftool,
     exiftool_path,
     verbose_,
@@ -391,22 +403,43 @@ def cli(
         sys.exit(0)
 
     if compare_exif:
+        album = PhotosAlbum(add_to_album) if add_to_album else None
+        different_photos = 0
         if photos:
             photocomp = PhotoCompare(
                 library_path=library, verbose=verbose, exiftool_path=exiftool_path
             )
-            print(
-                "filename, uuid, photo time (Photos), photo time (EXIF), timezone offset (Photos), timezone offset (EXIF)"
-            )
+            if not album:
+                echo(
+                    "filename, uuid, photo time (Photos), photo time (EXIF), timezone offset (Photos), timezone offset (EXIF)"
+                )
         for photo in photos:
             diff_results = photocomp.compare_exif_with_markup(photo)
             filename = (
                 red(photo.filename) if diff_results.diff else green(photo.filename)
             )
+            if album:
+                if diff_results.diff:
+                    different_photos += 1
+                    verbose(
+                        f"Photo {filename} ({photo.uuid}) has different date/time/timezone, adding to album '{album.name}'"
+                    )
+                    album.add(photo)
+                else:
+                    verbose(
+                        f"Photo {filename} ({photo.uuid}) has same date/time/timezone"
+                    )
+            else:
+                echo(
+                    f"{filename}, {photo.uuid}, "
+                    f"{diff_results.photos_date} {diff_results.photos_time}, {diff_results.exif_date} {diff_results.exif_time}, "
+                    f"{diff_results.photos_tz}, {diff_results.exif_tz}"
+                )
+        if album:
             echo(
-                f"{filename}, {photo.uuid}, "
-                f"{diff_results.photos_date} {diff_results.photos_time}, {diff_results.exif_date} {diff_results.exif_time}, "
-                f"{diff_results.photos_tz}, {diff_results.exif_tz}"
+                f"Compared {len(photos)} photos, found {different_photos} "
+                f"that {pluralize(different_photos, 'is', 'are')} different and "
+                f"added {pluralize(different_photos, 'it', 'them')} to album '{album.name}'."
             )
         sys.exit(0)
 
@@ -494,14 +527,6 @@ def update_photo_time_for_new_timezone(
         verbose(
             f"Skipping date/time update for photo {photo.filename} ({photo.uuid}), already matches new timezone {new_timezone}"
         )
-
-
-def pluralize(count, singular, plural):
-    """Return singular or plural based on count"""
-    if count == 1:
-        return singular
-    else:
-        return plural
 
 
 def main():

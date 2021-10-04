@@ -105,7 +105,7 @@ Specify which photo properties to change: [at least 1 required]
   -c, --compare-exif        Compare the EXIF date/time/timezone for each
                             selected photo to the same data in Photos.
 
-Settings:
+Options:
   -m, --match-time          When used with --timezone, adjusts the photo time
                             so that the timestamp in the new timezone matches
                             the timestamp in the old timezone. For example, if
@@ -120,6 +120,10 @@ Settings:
                             was taken but the timezone was missing or wrong and
                             you want to adjust the timezone while preserving
                             the photo's time. See also --timezone.
+  -a, --add-to-album ALBUM  When used with --compare, adds any photos with
+                            date/time/timezone differences between Photos/EXIF
+                            to album ALBUM.  If ALBUM does not exist, it will
+                            be created.
   -V, --verbose             Show verbose output.
   -L, --library PHOTOS_LIBRARY_PATH
                             Path to Photos library (e.g. '~/Pictures/Photos\

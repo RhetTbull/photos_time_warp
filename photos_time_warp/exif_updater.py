@@ -1,7 +1,7 @@
 """Use exiftool to update exif data in photos """
 
 import datetime
-from typing import Optional, Tuple, Callable
+from typing import Callable, Optional, Tuple
 
 from osxphotos import PhotosDB
 from osxphotos.datetime_utils import datetime_tz_to_utc
@@ -10,11 +10,7 @@ from photoscript import Photo
 
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .timezones import Timezone, format_offset_time
-
-
-def noop():
-    """No-op function for use as verbose if verbose not set"""
-    pass
+from .utils import noop
 
 
 class ExifUpdater:

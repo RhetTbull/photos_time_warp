@@ -21,6 +21,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from .sqlite_native import execute, query
 from .timezones import Timezone
+from .utils import noop
 
 
 def get_db_model_version(db_file):
@@ -62,10 +63,6 @@ def get_photos_version(db_file):
         # cross our fingers and try latest version
         return 7
 
-
-def noop():
-    """No-op function for use as verbose if verbose not set"""
-    pass
 
 
 def tz_to_str(tz_seconds: int) -> str:

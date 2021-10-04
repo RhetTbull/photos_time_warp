@@ -10,10 +10,7 @@ from photoscript import Photo
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .phototz import PhotoTimeZone
 
-
-def noop():
-    """No-op function for use as verbose if verbose not set"""
-    pass
+from .utils import noop
 
 
 def red(msg: str) -> str:
