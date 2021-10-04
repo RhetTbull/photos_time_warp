@@ -45,8 +45,6 @@ or
 
 For this to work, you'll need to install the third-party [exiftool](https://exiftool.org/) utility.
 
-**Note:** You may get a "database is locked" error when running this.  I'm working on a solution but if you see this error, simply re-run the script.  This happens when the script is trying to write to the Photos database the same time Photos is.
-
 ## Installation
 
 I recommend you install `photos_time_warp` with [pipx](https://github.com/pipxproject/pipx). If you use `pipx`, you will not need to create a virtual environment as `pipx` takes care of this. The easiest way to do this on a Mac is to use [homebrew](https://brew.sh/):
