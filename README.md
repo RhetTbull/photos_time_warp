@@ -74,67 +74,72 @@ Usage: photos_time_warp [OPTIONS]
   the 'All Photos' view.
 
 Specify which photo properties to change: [at least 1 required]
-  --date DATE           Set date for selected photos. Format is 'YYYY-MM-DD'.
-  --date-delta DELTA    Adjust date for selected photos by DELTA. Format is one
-                        of: '±D days', '±W weeks', '±D' where D is days
-  --time TIME           Set time for selected photos. Format is one of
-                        'HH:MM:SS', 'HH:MM:SS.fff', 'HH:MM'.
-  --time-delta DELTA    Adjust time for selected photos by DELTA time. Format
-                        is one of '±HH:MM:SS', '±H hours' (or hr), '±M minutes'
-                        (or min), '±S seconds' (or sec), '±S' (where S is
-                        seconds)
-  --timezone TIMEZONE   Set timezone for selected photos as offset from UTC.
-                        Format is one of '±HH:MM', '±H:MM', or '±HHMM'. The
-                        actual time of the photo is not adjusted which means,
-                        somewhat counterintuitively, that the time in the new
-                        timezone will be different. For example, if photo has
-                        time of 12:00 and timezone of GMT+01:00 and new
-                        timezone is specified as '--timezone +02:00' (one hour
-                        ahead of current GMT+01:00 timezone), the photo's new
-                        time will be 13:00 GMT+02:00, which is equivalent to
-                        the old time of 12:00+01:00. This is the same behavior
-                        exhibited by Photos when manually adjusting timezone in
-                        the Get Info window. See also --match-time.
-  --inspect             Print out the date/time/timezone for each selected
-                        photo without changing any information.
+  -d, --date DATE           Set date for selected photos. Format is 'YYYY-MM-
+                            DD'.
+  -D, --date-delta DELTA    Adjust date for selected photos by DELTA. Format is
+                            one of: '±D days', '±W weeks', '±D' where D is days
+  -t, --time TIME           Set time for selected photos. Format is one of
+                            'HH:MM:SS', 'HH:MM:SS.fff', 'HH:MM'.
+  -T, --time-delta DELTA    Adjust time for selected photos by DELTA time.
+                            Format is one of '±HH:MM:SS', '±H hours' (or hr),
+                            '±M minutes' (or min), '±S seconds' (or sec), '±S'
+                            (where S is seconds)
+  -z, --timezone TIMEZONE   Set timezone for selected photos as offset from
+                            UTC. Format is one of '±HH:MM', '±H:MM', or
+                            '±HHMM'. The actual time of the photo is not
+                            adjusted which means, somewhat counterintuitively,
+                            that the time in the new timezone will be
+                            different. For example, if photo has time of 12:00
+                            and timezone of GMT+01:00 and new timezone is
+                            specified as '--timezone +02:00' (one hour ahead of
+                            current GMT+01:00 timezone), the photo's new time
+                            will be 13:00 GMT+02:00, which is equivalent to the
+                            old time of 12:00+01:00. This is the same behavior
+                            exhibited by Photos when manually adjusting
+                            timezone in the Get Info window. See also --match-
+                            time.
+  -i, --inspect             Print out the date/time/timezone for each selected
+                            photo without changing any information.
 
 Settings:
-  --match-time          When used with --timezone, adjusts the photo time so
-                        that the timestamp in the new timezone matches the
-                        timestamp in the old timezone. For example, if photo
-                        has time of 12:00 and timezone of GMT+01:00 and new
-                        timezone is specified as '--timezone +02:00' (one hour
-                        ahead of current GMT+01:00 timezone), the photo's new
-                        time will be 12:00 GMT+02:00. That is, the timezone
-                        will have changed but the timestamp of the photo will
-                        match the previous timestamp. Use --match-time when the
-                        camera's time was correct for the time the photo was
-                        taken but the timezone was missing or wrong and you
-                        want to adjust the timezone while preserving the
-                        photo's time. See also --timezone.
-  -V, --verbose         Show verbose output.
+  -m, --match-time          When used with --timezone, adjusts the photo time
+                            so that the timestamp in the new timezone matches
+                            the timestamp in the old timezone. For example, if
+                            photo has time of 12:00 and timezone of GMT+01:00
+                            and new timezone is specified as '--timezone
+                            +02:00' (one hour ahead of current GMT+01:00
+                            timezone), the photo's new time will be 12:00
+                            GMT+02:00. That is, the timezone will have changed
+                            but the timestamp of the photo will match the
+                            previous timestamp. Use --match-time when the
+                            camera's time was correct for the time the photo
+                            was taken but the timezone was missing or wrong and
+                            you want to adjust the timezone while preserving
+                            the photo's time. See also --timezone.
+  -V, --verbose             Show verbose output.
   -L, --library PHOTOS_LIBRARY_PATH
-                        Path to Photos library (e.g. '~/Pictures/Photos\
-                        Library.photoslibrary'. This is not likely needed as
-                        photos_time_warp will usually be able to locate the
-                        path to the open Photos library. Use --library only if
-                        you get an error that the Photos library cannot be
-                        located.
-  --exiftool            Use exiftool to also update the date/time/timezone
-                        metadata in the original file in Photos' library. To
-                        use --exiftool, you must have the third-party exiftool
-                        utility installed (see https://exiftool.org/). Using
-                        this option modifies the *original* file of the image
-                        in your Photos library. It is possible for originals to
-                        be missing from disk (for example, if they've not been
-                        downloaded from iCloud); --exiftool will skip those
-                        files which are missing.
-  --exiftool-path PATH  Optional path to exiftool executable (will look in
-                        $PATH if not specified).
+                            Path to Photos library (e.g. '~/Pictures/Photos\
+                            Library.photoslibrary'. This is not likely needed
+                            as photos_time_warp will usually be able to locate
+                            the path to the open Photos library. Use --library
+                            only if you get an error that the Photos library
+                            cannot be located.
+  -x, --exiftool            Use exiftool to also update the date/time/timezone
+                            metadata in the original file in Photos' library.
+                            To use --exiftool, you must have the third-party
+                            exiftool utility installed (see
+                            https://exiftool.org/). Using this option modifies
+                            the *original* file of the image in your Photos
+                            library. It is possible for originals to be missing
+                            from disk (for example, if they've not been
+                            downloaded from iCloud); --exiftool will skip those
+                            files which are missing.
+  -p, --exiftool-path PATH  Optional path to exiftool executable (will look in
+                            $PATH if not specified).
 
 Other options:
-  --version             Show the version and exit.
-  --help                Show this message and exit.
+  --version                 Show the version and exit.
+  --help                    Show this message and exit.
 ```
 
 ## Implementation Details

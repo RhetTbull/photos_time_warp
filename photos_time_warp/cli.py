@@ -202,12 +202,14 @@ formatter_settings = HelpFormatter.settings(
     "Specify which photo properties to change",
     option(
         "--date",
+        "-d",
         metavar="DATE",
         type=DateTimeISO8601(),
         help="Set date for selected photos. Format is 'YYYY-MM-DD'.",
     ),
     option(
         "--date-delta",
+        "-D",
         metavar="DELTA",
         type=DateOffset(),
         help="Adjust date for selected photos by DELTA. "
@@ -215,12 +217,14 @@ formatter_settings = HelpFormatter.settings(
     ),
     option(
         "--time",
+        "-t",
         metavar="TIME",
         type=TimeString(),
         help="Set time for selected photos. Format is one of 'HH:MM:SS', 'HH:MM:SS.fff', 'HH:MM'.",
     ),
     option(
         "--time-delta",
+        "-T",
         metavar="DELTA",
         type=TimeOffset(),
         help="Adjust time for selected photos by DELTA time. "
@@ -228,6 +232,7 @@ formatter_settings = HelpFormatter.settings(
     ),
     option(
         "--timezone",
+        "-z",
         metavar="TIMEZONE",
         type=UTCOffset(),
         help="Set timezone for selected photos as offset from UTC. "
@@ -242,6 +247,7 @@ formatter_settings = HelpFormatter.settings(
     ),
     option(
         "--inspect",
+        "-i",
         is_flag=True,
         help="Print out the date/time/timezone for each selected photo without changing any information.",
     ),
@@ -253,6 +259,7 @@ formatter_settings = HelpFormatter.settings(
     "Settings",
     option(
         "--match-time",
+        "-m",
         is_flag=True,
         help="When used with --timezone, adjusts the photo time so that the timestamp in the new timezone matches "
         "the timestamp in the old timezone. "
@@ -275,6 +282,7 @@ formatter_settings = HelpFormatter.settings(
     ),
     option(
         "--exiftool",
+        "-x",
         is_flag=True,
         help="Use exiftool to also update the date/time/timezone metadata in the original file in Photos' library. "
         "To use --exiftool, you must have the third-party exiftool utility installed (see https://exiftool.org/). "
@@ -284,6 +292,7 @@ formatter_settings = HelpFormatter.settings(
     ),
     option(
         "--exiftool-path",
+        "-p",
         type=click.Path(exists=True),
         help="Optional path to exiftool executable (will look in $PATH if not specified).",
     ),
