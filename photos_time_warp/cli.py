@@ -269,7 +269,8 @@ formatter_settings = HelpFormatter.settings(
         "--compare-exif",
         "-c",
         is_flag=True,
-        help="Compare the EXIF date/time/timezone for each selected photo to the same data in Photos.",
+        help="Compare the EXIF date/time/timezone for each selected photo to the same data in Photos. "
+        "See also --add-to-album.",
     ),
     constraint=RequireAtLeast(1),
 )
@@ -294,7 +295,7 @@ formatter_settings = HelpFormatter.settings(
         "--add-to-album",
         "-a",
         metavar="ALBUM",
-        help="When used with --compare, adds any photos with date/time/timezone differences "
+        help="When used with --compare-exif, adds any photos with date/time/timezone differences "
         "between Photos/EXIF to album ALBUM.  If ALBUM does not exist, it will be created.",
     ),
     option("--verbose", "-V", "verbose_", is_flag=True, help="Show verbose output."),
