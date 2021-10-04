@@ -73,7 +73,7 @@ Usage: photos_time_warp [OPTIONS]
   on photos selected in a Smart Album; select photos in a regular album or in
   the 'All Photos' view.
 
-Specify which photo properties to change.: [at least 1 required]
+Specify which photo properties to change: [at least 1 required]
   --date DATE           Set date for selected photos. Format is 'YYYY-MM-DD'.
   --date-delta DELTA    Adjust date for selected photos by DELTA. Format is one
                         of: '±D days', '±W weeks', '±D' where D is days
@@ -84,11 +84,34 @@ Specify which photo properties to change.: [at least 1 required]
                         (or min), '±S seconds' (or sec), '±S' (where S is
                         seconds)
   --timezone TIMEZONE   Set timezone for selected photos as offset from UTC.
-                        Format is one of '±HH:MM', '±H:MM', or '±HHMM'
+                        Format is one of '±HH:MM', '±H:MM', or '±HHMM'. The
+                        actual time of the photo is not adjusted which means,
+                        somewhat counterintuitively, that the time in the new
+                        timezone will be different. For example, if photo has
+                        time of 12:00 and timezone of GMT+01:00 and new
+                        timezone is specified as '--timezone +02:00' (one hour
+                        ahead of current GMT+01:00 timezone), the photo's new
+                        time will be 13:00 GMT+02:00, which is equivalent to
+                        the old time of 12:00+01:00. This is the same behavior
+                        exhibited by Photos when manually adjusting timezone in
+                        the Get Info window. See also --match-time.
   --inspect             Print out the date/time/timezone for each selected
                         photo without changing any information.
 
 Settings:
+  --match-time          When used with --timezone, adjusts the photo time so
+                        that the timestamp in the new timezone matches the
+                        timestamp in the old timezone. For example, if photo
+                        has time of 12:00 and timezone of GMT+01:00 and new
+                        timezone is specified as '--timezone +02:00' (one hour
+                        ahead of current GMT+01:00 timezone), the photo's new
+                        time will be 12:00 GMT+02:00. That is, the timezone
+                        will have changed but the timestamp of the photo will
+                        match the previous timestamp. Use --match-time when the
+                        camera's time was correct for the time the photo was
+                        taken but the timezone was missing or wrong and you
+                        want to adjust the timezone while preserving the
+                        photo's time. See also --timezone.
   -V, --verbose         Show verbose output.
   -L, --library PHOTOS_LIBRARY_PATH
                         Path to Photos library (e.g. '~/Pictures/Photos\
