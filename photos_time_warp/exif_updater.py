@@ -9,20 +9,12 @@ from osxphotos.exiftool import ExifTool
 from photoscript import Photo
 
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
-from .timezones import Timezone
+from .timezones import Timezone, format_offset_time
 
 
 def noop():
     """No-op function for use as verbose if verbose not set"""
     pass
-
-
-def format_offset_time(offset: int) -> str:
-    """Format offset time to exiftool format: -04:00"""
-    sign = "-" if offset < 0 else "+"
-    hours, remainder = divmod(abs(offset), 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{sign}{hours:02d}:{minutes:02d}"
 
 
 class ExifUpdater:
@@ -97,16 +89,16 @@ class ExifUpdater:
         # [Keys]          CreationDate                    : 2020:12:10 22:10:10-08:00
         exif = {}
         if _photo.isphoto:
-            if update_time or update_date:
-                exif["EXIF:DateTimeOriginal"] = datetimeoriginal
-                exif["EXIF:CreateDate"] = datetimeoriginal
-                dateoriginal = photo_date.strftime("%Y:%m:%d")
-                exif["IPTC:DateCreated"] = dateoriginal
-                timeoriginal = photo_date.strftime(f"%H:%M:%S{offset}")
-                exif["IPTC:TimeCreated"] = timeoriginal
+            # if update_time or update_date:
+            exif["EXIF:DateTimeOriginal"] = datetimeoriginal
+            exif["EXIF:CreateDate"] = datetimeoriginal
+            dateoriginal = photo_date.strftime("%Y:%m:%d")
+            exif["IPTC:DateCreated"] = dateoriginal
+            timeoriginal = photo_date.strftime(f"%H:%M:%S{offset}")
+            exif["IPTC:TimeCreated"] = timeoriginal
 
-            if timezone_offset:
-                exif["EXIF:OffsetTimeOriginal"] = offset
+            # if timezone_offset:
+            exif["EXIF:OffsetTimeOriginal"] = offset
 
         elif _photo.ismovie:
             # QuickTime spec specifies times in UTC

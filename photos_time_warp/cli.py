@@ -19,9 +19,16 @@ from cloup import (
     option_group,
     version_option,
 )
-from cloup.constraints import RequireAtLeast, mutually_exclusive
+from cloup.constraints import (
+    ErrorFmt,
+    If,
+    RequireAtLeast,
+    RequireExactly,
+    mutually_exclusive,
+)
 from osxphotos.exiftool import get_exiftool_path
-from photoscript import PhotosLibrary
+from photoscript import Photo, PhotosLibrary
+from rich.console import Console
 
 from ._version import __version__
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
@@ -34,7 +41,8 @@ from .timeutils import (
 )
 from .timezones import Timezone
 
-from rich.console import Console
+# name of the script
+APP_NAME = "photos_time_warp"
 
 # Set up rich console
 CONSOLE = Console()
@@ -45,9 +53,6 @@ VERBOSE = False
 
 # format for pretty printing date/times
 DATETIME_FORMAT = "%Y:%m:%d %H:%M:%S%z"
-
-# name of the script
-APP_NAME = "photos_time_warp"
 
 
 def verbose(message_str, **kwargs):
@@ -74,6 +79,12 @@ def print_warning(message):
 def echo(message):
     """print to stdout using rich"""
     CONSOLE.print(message)
+
+
+requires_one = RequireExactly(1).rephrased(
+    help="requires one",
+    error=f"it must be used with:\n" f"{ErrorFmt.param_list}",
+)
 
 
 class DateTimeISO8601(click.ParamType):
@@ -220,7 +231,14 @@ formatter_settings = HelpFormatter.settings(
         metavar="TIMEZONE",
         type=UTCOffset(),
         help="Set timezone for selected photos as offset from UTC. "
-        "Format is one of '±HH:MM', '±H:MM', or '±HHMM'",
+        "Format is one of '±HH:MM', '±H:MM', or '±HHMM'. "
+        "The actual time of the photo is not adjusted which means, somewhat counterintuitively, "
+        "that the time in the new timezone will be different. "
+        "For example, if photo has time of 12:00 and timezone of GMT+01:00 and new timezone is specified as "
+        "'--timezone +02:00' (one hour ahead of current GMT+01:00 timezone), the photo's new time will be 13:00 GMT+02:00, "
+        "which is equivalent to the old time of 12:00+01:00. "
+        "This is the same behavior exhibited by Photos when manually adjusting timezone in the Get Info window. "
+        "See also --match-time. ",
     ),
     option(
         "--inspect",
@@ -233,6 +251,18 @@ formatter_settings = HelpFormatter.settings(
 @constraint(mutually_exclusive, ["time", "time_delta"])
 @option_group(
     "Settings",
+    option(
+        "--match-time",
+        is_flag=True,
+        help="When used with --timezone, adjusts the photo time so that the timestamp in the new timezone matches "
+        "the timestamp in the old timezone. "
+        "For example, if photo has time of 12:00 and timezone of GMT+01:00 and new timezone is specified as "
+        "'--timezone +02:00' (one hour ahead of current GMT+01:00 timezone), the photo's new time will be 12:00 GMT+02:00. "
+        "That is, the timezone will have changed but the timestamp of the photo will match the previous timestamp. "
+        "Use --match-time when the camera's time was correct for the time the photo was taken but the "
+        "timezone was missing or wrong and you want to adjust the timezone while preserving the photo's time. "
+        "See also --timezone.",
+    ),
     option("--verbose", "-V", "verbose_", is_flag=True, help="Show verbose output."),
     option(
         "--library",
@@ -258,6 +288,7 @@ formatter_settings = HelpFormatter.settings(
         help="Optional path to exiftool executable (will look in $PATH if not specified).",
     ),
 )
+@constraint(If("match_time", then=requires_one), ["timezone"])
 @version_option(version=__version__)
 def cli(
     date,
@@ -266,6 +297,7 @@ def cli(
     time_delta,
     timezone,
     inspect,
+    match_time,
     exiftool,
     exiftool_path,
     verbose_,
@@ -294,7 +326,7 @@ def cli(
             print_error(
                 "Could not get selected photos. Ensure photos is open and photos are selected. "
                 "If you have selected photos and you see this message, it may be because the selected photos are in a Photos Smart Album. "
-                "photos_time_warp cannot access photos in a Smart Album.  Select the photos in a regular album or in 'All Photos' view. "
+                f"{APP_NAME} cannot access photos in a Smart Album.  Select the photos in a regular album or in 'All Photos' view. "
                 "Another option is to create a new album using 'File | New Album With Selection' then select the photos in the new album.",
             )
         else:
@@ -343,12 +375,18 @@ def cli(
         for p in bar:
             if any([date, time, date_delta, time_delta]):
                 update_photo_date_time_(p)
+            if match_time:
+                # need to adjust time before the timezone is updated
+                # or the old timezone will be overwritten in the database
+                update_photo_time_for_new_timezone(
+                    library_path=library, photo=p, new_timezone=timezone
+                )
             if timezone:
                 tz_updater.update_photo(p)
             if exiftool:
                 exif_warn, exif_error = exif_updater.update_photo(
                     p,
-                    update_time=time or time_delta,
+                    update_time=time or time_delta,  # ZZZ timezone?/match_time
                     update_date=date or date_delta,
                     timezone_offset=timezone,
                 )
@@ -380,67 +418,35 @@ def update_photo_date_time(photo, date, time, date_delta, time_delta):
         )
 
 
+def update_photo_time_for_new_timezone(
+    library_path: str, photo: Photo, new_timezone: Timezone
+):
+    """Update time in photo to keep it the same time but in a new timezone
+
+    For example, photo time is 12:00+0100 and new timezone is +0200,
+    so adjust photo time by 1 hour so it will now be 12:00+0200 instead of
+    13:00+0200 as it would be with no adjustment to the time"""
+    old_timezone = PhotoTimeZone(library_path=library_path).get_timezone(photo)[0]
+    # need to move time in opposite direction of timezone offset so that
+    # photo time is the same time but in the new timezone
+    delta = old_timezone - new_timezone.offset
+    photo_date = photo.date
+    new_photo_date = update_datetime(
+        dt=photo_date, time_delta=datetime.timedelta(seconds=delta)
+    )
+    photo.date = new_photo_date
+    verbose(
+        f"Adjusted date/time for photo {photo.filename} ({photo.uuid}) to match "
+        f"previous time {photo_date} but in new timezone {new_timezone}."
+    )
+
+
 def pluralize(count, singular, plural):
     """Return singular or plural based on count"""
     if count == 1:
         return singular
     else:
         return plural
-
-
-# def rich_text(text, width=78):
-#     """Return rich formatted text"""
-#     sio = io.StringIO()
-#     console = Console(file=sio, force_terminal=True, width=width)
-#     console.print(text)
-#     rich_text = sio.getvalue()
-#     sio.close()
-#     return rich_text
-
-
-# def strip_md_header_and_links(md):
-#     """strip markdown headers and links from markdown text md
-
-#     Args:
-#         md: str, markdown text
-
-#     Returns:
-#         str with markdown headers and links removed
-
-#     Note: This uses a very basic regex that likely fails on all sorts of edge cases
-#     but works for the links in the osxphotos docs
-#     """
-#     links = r"(?:[*#])|\[(.*?)\]\(.+?\)"
-
-#     def subfn(match):
-#         return match.group(1)
-
-#     return re.sub(links, subfn, md)
-
-
-# def strip_md_links(md):
-#     """strip markdown links from markdown text md
-
-#     Args:
-#         md: str, markdown text
-
-#     Returns:
-#         str with markdown links removed
-
-#     Note: This uses a very basic regex that likely fails on all sorts of edge cases
-#     but works for the links in the osxphotos docs
-#     """
-#     links = r"\[(.*?)\]\(.+?\)"
-
-#     def subfn(match):
-#         return match.group(1)
-
-#     return re.sub(links, subfn, md)
-
-
-# def strip_html_comments(text):
-#     """Strip html comments from text (which doesn't need to be valid HTML)"""
-#     return re.sub(r"<!--(.|\s|\n)*?-->", "", text)
 
 
 def main():
