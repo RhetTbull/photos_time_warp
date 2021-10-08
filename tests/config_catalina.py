@@ -7,6 +7,14 @@ from tests.parse_output import CompareValues, InspectValues
 TEST_LIBRARY = "TestTimeWarp-10.15.7.photoslibrary"
 
 CATALINA_PHOTOS_5 = {
+    "filenames": {
+        "pumpkins": "IMG_6522.jpeg",
+        "pears": "IMG_6501.jpeg",
+        "sunflowers": "IMG_6520.jpeg",
+        "apple tree": "IMG_6526.jpeg",
+        "marigold flowers": "IMG_6517.jpeg",
+        "multi-colored zinnia flowers": "IMG_6506.jpeg",
+    },
     "inspect": {
         # IMG_6501.jpeg
         "uuid": "2F00448D-3C0D-477A-9B10-5F21DCAB405A",
@@ -140,5 +148,100 @@ CATALINA_PHOTOS_5 = {
                 "-04:00",
             ),
         ],
+    },
+    "push_exif": {
+        # IMG_6501.jpeg
+        "pre": CompareValues(
+            "IMG_6501.jpeg",
+            "2F00448D-3C0D-477A-9B10-5F21DCAB405A",
+            "2020-09-01 16:53:02",
+            "2021-10-02 12:40:07",
+            "-0600",
+            "-0700",
+        ),
+        "post": CompareValues(
+            "IMG_6501.jpeg",
+            "2F00448D-3C0D-477A-9B10-5F21DCAB405A",
+            "2020-09-01 16:53:02",
+            "2020-09-01 16:53:02",
+            "-0600",
+            "-0600",
+        ),
+    },
+    "pull_exif_1": {
+        # IMG_6501.jpeg
+        "pre": CompareValues(
+            "IMG_6501.jpeg",
+            "2F00448D-3C0D-477A-9B10-5F21DCAB405A",
+            "2020-09-02 16:53:02",
+            "2020-09-01 16:53:02",
+            "-0400",
+            "-0600",
+        ),
+        "post": CompareValues(
+            "IMG_6501.jpeg",
+            "2F00448D-3C0D-477A-9B10-5F21DCAB405A",
+            "2020-09-01 16:53:02",
+            "2020-09-01 16:53:02",
+            "-0600",
+            "-0600",
+        ),
+    },
+    "pull_exif_no_time": {
+        # IMG_6526.jpeg (apple tree)
+        "pre": CompareValues(
+            "IMG_6526.jpeg",
+            "1A61156A-5747-42DE-A9B3-4A468CC49D9E",
+            "2021-10-02 15:15:00",
+            "",
+            "-0400",
+            "-0700",
+        ),
+        "post": CompareValues(
+            "IMG_6526.jpeg",
+            "1A61156A-5747-42DE-A9B3-4A468CC49D9E",
+            "2021-10-02 00:00:00",
+            "",
+            "-0700",
+            "-0700",
+        ),
+    },
+    "pull_exif_no_offset": {
+        # IMG_6517.jpeg
+        "pre": CompareValues(
+            "IMG_6517.jpeg",
+            "C4D952AF-983D-438E-9070-6310B1BC4826",
+            "2021-10-02 12:50:00",
+            "2021-10-02 12:51:15",
+            "-0700",
+            "",
+        ),
+        "post": CompareValues(
+            "IMG_6517.jpeg",
+            "C4D952AF-983D-438E-9070-6310B1BC4826",
+            "2021-10-02 12:51:15",
+            "2021-10-02 12:51:15",
+            "-0700",
+            "",
+        ),
+    },
+    "pull_exif_no_data": {
+        # IMG_6506.jpeg (zinnia flowers)
+        "pre": CompareValues(
+            "IMG_6506.jpeg",
+            "7E9DF2EE-A5B0-4077-80EC-30565221A3B9",
+            "2021-10-08 16:11:09",
+            "",
+            "-0700",
+            "",
+        ),
+        "post": CompareValues(
+            "IMG_6506.jpeg",
+            "7E9DF2EE-A5B0-4077-80EC-30565221A3B9",
+            "2021-10-08 16:11:09",
+            "",
+            "-0700",
+            "",
+        )
     },
 }

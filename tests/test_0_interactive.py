@@ -8,13 +8,13 @@ from click.testing import CliRunner
 from osxphotos import PhotosDB
 from osxphotos.exiftool import ExifTool
 
-from tests.parse_output import parse_compare_exif, parse_inspect_output
 from tests.conftest import (
     copy_photos_library,
     get_os_version,
     photoslib,
     suspend_capture,
 )
+from tests.parse_output import parse_compare_exif, parse_inspect_output
 
 # set timezone to avoid issues with comparing dates
 os.environ["TZ"] = "US/Pacific"
@@ -33,17 +33,33 @@ def say(msg: str) -> None:
     os.system(f"say {msg}")
 
 
+def ask_user_to_make_selection(photoslib, suspend_capture, photo_name: str) -> bool:
+    """Ask user to make selection"""
+    # needs to be called with a suspend_capture fixture
+    with suspend_capture:
+        prompt = f"Select the photo of the {photo_name} then press Enter."
+        say(prompt)
+        input(f"\n{prompt}")
+
+    selection = photoslib.selection
+    if len(selection) != 1:
+        return False
+    if selection[0].filename != TEST_DATA["filenames"][photo_name]:
+        return False
+    return True
+
+
 ########## Interactive tests run first ##########
+
+
+def test_select_pears(photoslib, suspend_capture):
+    """Force user to select the right photo for following tests"""
+    assert ask_user_to_make_selection(photoslib, suspend_capture, "pears")
 
 
 def test_inspect(photoslib, suspend_capture):
     """Test --inspect. NOTE: this test requires user interaction"""
     from photos_time_warp.cli import cli
-
-    with suspend_capture:
-        prompt = "Select the photo of the pears then press Enter."
-        say(prompt)
-        input(f"\n{prompt}")
 
     runner = CliRunner()
     result = runner.invoke(cli, ["--inspect", "--plain"])
@@ -197,15 +213,15 @@ def test_compare_exif_add_to_album(photoslib, suspend_capture, expected, album):
     assert album in [album.name for album in photo.albums]
 
 
+def test_select_sunflowers(photoslib, suspend_capture):
+    """Force user to select the right photo for following tests"""
+    assert ask_user_to_make_selection(photoslib, suspend_capture, "sunflowers")
+
+
 @pytest.mark.parametrize("expected", TEST_DATA["compare_exif_3"]["expected"])
 def test_compare_exif_3(photoslib, suspend_capture, expected):
     """Test --compare-exif"""
     from photos_time_warp.cli import cli
-
-    with suspend_capture:
-        prompt = "Select the photo of the sunflowers then press Enter."
-        say(prompt)
-        input(f"\n{prompt}")
 
     runner = CliRunner()
     result = runner.invoke(
@@ -241,13 +257,30 @@ def test_match(photoslib, suspend_capture, input_value, expected):
     assert output_values[0].date_tz == expected
 
 
+def test_push_exif_missing_file():
+    """Test --push-exif when an original file is missing"""
+    from photos_time_warp.cli import cli
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--push-exif", "--plain", "--verbose"],
+    )
+    assert result.exit_code == 0
+    assert "Skipping EXIF update for missing photo" in result.output
+
+
+def test_select_pumpkins(photoslib, suspend_capture):
+    """Force user to select the right photo for following tests"""
+    assert ask_user_to_make_selection(photoslib, suspend_capture, "pumpkins")
+
+
 @pytest.mark.parametrize(
     "match,tz_value,time_delta_value,expected_date,exif_date,exif_offset",
     TEST_DATA["exiftool"]["parameters"],
 )
-def test_exiftool(
+def test_push_exif_1(
     photoslib,
-    suspend_capture,
     match,
     tz_value,
     time_delta_value,
@@ -255,20 +288,15 @@ def test_exiftool(
     exif_date,
     exif_offset,
 ):
-    """Test --timezone --match"""
+    """Test --timezone --match with --push-exif"""
     from photos_time_warp.cli import cli
-
-    with suspend_capture:
-        prompt = "Select the photo of the pumpkins then press Enter."
-        say(prompt)
-        input(f"\n{prompt}")
 
     cli_args = [
         "--timezone",
         tz_value,
         "--time-delta",
         time_delta_value,
-        "--exiftool",
+        "--push-exif",
         "--plain",
     ]
     if match:
@@ -291,3 +319,170 @@ def test_exiftool(
     exifdict = exif.asdict()
     assert exifdict["EXIF:DateTimeOriginal"] == exif_date
     assert exifdict["EXIF:OffsetTimeOriginal"] == exif_offset
+
+
+def test_select_pears_2(photoslib, suspend_capture):
+    """Force user to select the right photo for following tests"""
+    assert ask_user_to_make_selection(photoslib, suspend_capture, "pears")
+
+
+def test_push_exif_2(photoslib, suspend_capture):
+    """Test --push-exif"""
+    pre_test = TEST_DATA["push_exif"]["pre"]
+    post_test = TEST_DATA["push_exif"]["post"]
+
+    from photos_time_warp.cli import cli
+
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == pre_test
+
+    result = runner.invoke(
+        cli,
+        [
+            "--push-exif",
+            "--plain",
+            "--verbose",
+        ],
+    )
+    assert result.exit_code == 0
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == post_test
+
+
+def test_pull_exif_1(photoslib, suspend_capture):
+    """Test --pull-exif"""
+    pre_test = TEST_DATA["pull_exif_1"]["pre"]
+    post_test = TEST_DATA["pull_exif_1"]["post"]
+
+    from photos_time_warp.cli import cli
+
+    runner = CliRunner()
+
+    # update the photo so we know if the data is updated
+    result = runner.invoke(cli, ["-z", "-0400", "-D", "+1 day", "-m", "-V"])
+    assert result.exit_code == 0
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == pre_test
+
+    result = runner.invoke(
+        cli,
+        [
+            "--pull-exif",
+            "--plain",
+            "--verbose",
+        ],
+    )
+    assert result.exit_code == 0
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == post_test
+
+
+def test_select_apple_tree(photoslib, suspend_capture):
+    """Force user to select the right photo for following tests"""
+    assert ask_user_to_make_selection(photoslib, suspend_capture, "apple tree")
+
+
+def test_pull_exif_no_time(photoslib, suspend_capture):
+    """Test --pull-exif when photo has invalid date/time in EXIF"""
+    pre_test = TEST_DATA["pull_exif_no_time"]["pre"]
+    post_test = TEST_DATA["pull_exif_no_time"]["post"]
+
+    from photos_time_warp.cli import cli
+
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == pre_test
+
+    result = runner.invoke(
+        cli,
+        [
+            "--pull-exif",
+            "--plain",
+            "--verbose",
+        ],
+    )
+    assert result.exit_code == 0
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == post_test
+
+
+def test_select_marigolds(photoslib, suspend_capture):
+    """Force user to select the right photo for following tests"""
+    assert ask_user_to_make_selection(photoslib, suspend_capture, "marigold flowers")
+
+
+def test_pull_exif_no_offset(photoslib, suspend_capture):
+    """Test --pull-exif when photo has no offset in EXIF"""
+    pre_test = TEST_DATA["pull_exif_no_offset"]["pre"]
+    post_test = TEST_DATA["pull_exif_no_offset"]["post"]
+
+    from photos_time_warp.cli import cli
+
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == pre_test
+
+    result = runner.invoke(
+        cli,
+        [
+            "--pull-exif",
+            "--plain",
+            "--verbose",
+        ],
+    )
+    assert result.exit_code == 0
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == post_test
+
+
+def test_select_zinnias(photoslib, suspend_capture):
+    """Force user to select the right photo for following tests"""
+    assert ask_user_to_make_selection(
+        photoslib, suspend_capture, "multi-colored zinnia flowers"
+    )
+
+
+def test_pull_exif_no_data(photoslib, suspend_capture):
+    """Test --pull-exif when photo has data in EXIF"""
+    pre_test = TEST_DATA["pull_exif_no_data"]["pre"]
+    post_test = TEST_DATA["pull_exif_no_data"]["post"]
+
+    from photos_time_warp.cli import cli
+
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == pre_test
+
+    result = runner.invoke(
+        cli,
+        [
+            "--pull-exif",
+            "--plain",
+            "--verbose",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Skipping update for missing EXIF data in photo" in result.output
+
+    result = runner.invoke(cli, ["--compare-exif", "--plain"])
+    output_values = parse_compare_exif(result.output)
+    assert output_values[0] == post_test

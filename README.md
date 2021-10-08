@@ -11,6 +11,8 @@ photos_time_warp operates on photos selected in Apple Photos.  To use it, open P
 
 This example sets the date for all selected photos to `2021-09-10`, subtracts 1 hour from the time of each photo, and sets the timezone of each photo to `GMT -07:00` (Pacific Daylight Time).
 
+photos_time_warp has been well tested on macOS Catalina (10.15).  It should work on macOS Big Sur (11.0) and macOS Monterey (12.0) but I have not been able to test this.  It will not work on macOS Mojave (10.14) or earlier as the Photos database format is different.
+
 **Caution**: This app directly modifies your Photos library database using undocumented features.  It may corrupt, damage, or destroy your Photos library.  Use at your own caution.  I strongly recommend you make a backup of your Photos library before using this script (e.g. use Time Machine).  See also [Warranty](#Warranty). 
 
 ## Synopsis
@@ -51,7 +53,7 @@ For this to work, you'll need to install the third-party [exiftool](https://exif
 
 ## Installation
 
-I recommend you install `photos_time_warp` with [pipx](https://github.com/pipxproject/pipx). If you use `pipx`, you will not need to create a virtual environment as `pipx` takes care of this. The easiest way to do this on a Mac is to use [homebrew](https://brew.sh/):
+I recommend you install `photos_time_warp` with [pipx](https://github.com/pipxproject/pipx).  The easiest way to do this on a Mac is to use [homebrew](https://brew.sh/):
 
 - Open `Terminal` (search for `Terminal` in Spotlight or look in `Applications/Utilities`)
 - Install `homebrew` according to instructions at [https://brew.sh/](https://brew.sh/)
@@ -75,7 +77,7 @@ Usage: photos_time_warp [OPTIONS]
   on photos selected in a Smart Album; select photos in a regular album or in
   the 'All Photos' view.
 
-Specify which photo properties to change: [at least 1 required]
+Specify one or more command: [at least 1 required]
   -d, --date DATE           Set date for selected photos. Format is 'YYYY-MM-
                             DD'.
   -D, --date-delta DELTA    Adjust date for selected photos by DELTA. Format is
@@ -103,8 +105,37 @@ Specify which photo properties to change: [at least 1 required]
   -i, --inspect             Print out the date/time/timezone for each selected
                             photo without changing any information.
   -c, --compare-exif        Compare the EXIF date/time/timezone for each
-                            selected photo to the same data in Photos. See also
-                            --add-to-album.
+                            selected photo to the same data in Photos. Requires
+                            the third-party exiftool utility be installed (see
+                            https://exiftool.org/). See also --add-to-album.
+  -p, --push-exif           Push date/time and timezone for selected photos
+                            from Photos to the EXIF metadata in the original
+                            file in the Photos library. Requires the third-
+                            party exiftool utility be installed (see
+                            https://exiftool.org/). Using this option modifies
+                            the *original* file of the image in your Photos
+                            library. --push-exif will be executed after any
+                            other updates are performed on the photo. See also
+                            --pull-exif.
+  -P, --pull-exif           Pull date/time and timezone for selected photos
+                            from EXIF metadata in the original file into Photos
+                            and update the associated data in Photos to match
+                            the EXIF data. --pull-exif will be executed before
+                            any other updates are performed on the photo. It is
+                            possible for images to have missing EXIF data, for
+                            example the date/time could be set but there might
+                            be no timezone set in the EXIF metadata. Missing
+                            data will be handled thusly: if date/time/timezone
+                            are all present in the EXIF data, the photo's
+                            date/time/timezone will be updated. If timezone is
+                            missing but date/time is present, only the photo's
+                            date/time will be updated.  If date/time is missing
+                            but the timezone is present, only the photo's
+                            timezone will be updated. If the date is present
+                            but the time is missing, the time will be set to
+                            00:00:00. Requires the third-party exiftool utility
+                            be installed (see https://exiftool.org/). See also
+                            --push-exif.
 
 Options:
   -m, --match-time          When used with --timezone, adjusts the photo time
@@ -128,23 +159,14 @@ Options:
   -V, --verbose             Show verbose output.
   -L, --library PHOTOS_LIBRARY_PATH
                             Path to Photos library (e.g. '~/Pictures/Photos\
-                            Library.photoslibrary'. This is not likely needed
+                            Library.photoslibrary'). This is not likely needed
                             as photos_time_warp will usually be able to locate
                             the path to the open Photos library. Use --library
                             only if you get an error that the Photos library
                             cannot be located.
-  -x, --exiftool            Use exiftool to also update the date/time/timezone
-                            metadata in the original file in Photos' library.
-                            To use --exiftool, you must have the third-party
-                            exiftool utility installed (see
-                            https://exiftool.org/). Using this option modifies
-                            the *original* file of the image in your Photos
-                            library. It is possible for originals to be missing
-                            from disk (for example, if they've not been
-                            downloaded from iCloud); --exiftool will skip those
-                            files which are missing.
-  -p, --exiftool-path PATH  Optional path to exiftool executable (will look in
-                            $PATH if not specified).
+  -e, --exiftool-path PATH  Optional path to exiftool executable (will look in
+                            $PATH if not specified) for those options which
+                            require exiftool.
 
 Other options:
   --version                 Show the version and exit.

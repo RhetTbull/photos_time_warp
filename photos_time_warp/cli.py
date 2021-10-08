@@ -214,7 +214,7 @@ formatter_settings = HelpFormatter.settings(
 
 @command(cls=PhotosTimeWarpCommand, formatter_settings=formatter_settings)
 @option_group(
-    "Specify which photo properties to change",
+    "Specify one or more command",
     option(
         "--date",
         "-d",
@@ -271,7 +271,35 @@ formatter_settings = HelpFormatter.settings(
         "-c",
         is_flag=True,
         help="Compare the EXIF date/time/timezone for each selected photo to the same data in Photos. "
+        "Requires the third-party exiftool utility be installed (see https://exiftool.org/). "
         "See also --add-to-album.",
+    ),
+    option(
+        "--push-exif",
+        "-p",
+        is_flag=True,
+        help="Push date/time and timezone for selected photos from Photos to the "
+        "EXIF metadata in the original file in the Photos library. "
+        "Requires the third-party exiftool utility be installed (see https://exiftool.org/). "
+        "Using this option modifies the *original* file of the image in your Photos library. "
+        "--push-exif will be executed after any other updates are performed on the photo. "
+        "See also --pull-exif.",
+    ),
+    option(
+        "--pull-exif",
+        "-P",
+        is_flag=True,
+        help="Pull date/time and timezone for selected photos from EXIF metadata in the original file "
+        "into Photos and update the associated data in Photos to match the EXIF data. "
+        "--pull-exif will be executed before any other updates are performed on the photo. "
+        "It is possible for images to have missing EXIF data, for example the date/time could be set but there might be "
+        "no timezone set in the EXIF metadata. "
+        "Missing data will be handled thusly: if date/time/timezone are all present in the EXIF data, "
+        "the photo's date/time/timezone will be updated. If timezone is missing but date/time is present, "
+        "only the photo's date/time will be updated.  If date/time is missing but the timezone is present, only the "
+        "photo's timezone will be updated. If the date is present but the time is missing, the time will be set to 00:00:00. "
+        "Requires the third-party exiftool utility be installed (see https://exiftool.org/). "
+        "See also --push-exif.",
     ),
     constraint=RequireAtLeast(1),
 )
@@ -310,20 +338,10 @@ formatter_settings = HelpFormatter.settings(
         "Use --library only if you get an error that the Photos library cannot be located.",
     ),
     option(
-        "--exiftool",
-        "-x",
-        is_flag=True,
-        help="Use exiftool to also update the date/time/timezone metadata in the original file in Photos' library. "
-        "To use --exiftool, you must have the third-party exiftool utility installed (see https://exiftool.org/). "
-        "Using this option modifies the *original* file of the image in your Photos library. "
-        "It is possible for originals to be missing from disk (for example, if they've not been downloaded from iCloud); "
-        "--exiftool will skip those files which are missing.",
-    ),
-    option(
         "--exiftool-path",
-        "-p",
+        "-e",
         type=click.Path(exists=True),
-        help="Optional path to exiftool executable (will look in $PATH if not specified).",
+        help="Optional path to exiftool executable (will look in $PATH if not specified) for those options which require exiftool.",
     ),
     option(
         "--plain",
@@ -343,9 +361,10 @@ def cli(
     timezone,
     inspect,
     compare_exif,
+    push_exif,
+    pull_exif,
     match_time,
     add_to_album,
-    exiftool,
     exiftool_path,
     verbose_,
     library,
@@ -359,7 +378,7 @@ def cli(
     global _verbose
     _verbose = verbose_
 
-    if exiftool:
+    if any([compare_exif, push_exif, pull_exif]):
         exiftool_path = exiftool_path or get_exiftool_path()
         verbose(f"exiftool path: {exiftool_path}")
 
@@ -464,7 +483,7 @@ def cli(
             timezone, verbose=verbose, library_path=library
         )
 
-    if exiftool:
+    if any([push_exif, pull_exif]):
         exif_updater = ExifUpdater(
             library_path=library, verbose=verbose, exiftool_path=exiftool_path
         )
@@ -474,6 +493,8 @@ def cli(
     fp = open(os.devnull, "w") if _verbose else None
     with click.progressbar(photos, file=fp) as bar:
         for p in bar:
+            if pull_exif:
+                exif_updater.update_photos_from_exif(p)
             if any([date, time, date_delta, time_delta]):
                 update_photo_date_time_(p)
             if match_time:
@@ -482,13 +503,10 @@ def cli(
                 update_photo_time_for_new_timezone_(photo=p, new_timezone=timezone)
             if timezone:
                 tz_updater.update_photo(p)
-            if exiftool:
-                exif_warn, exif_error = exif_updater.update_photo(
-                    p,
-                    update_time=time or time_delta,  # ZZZ timezone?/match_time
-                    update_date=date or date_delta,
-                    timezone_offset=timezone,
-                )
+            if push_exif:
+                # this should be the last step in the if chain to ensure all Photos data is updated
+                # before exiftool is run
+                exif_warn, exif_error = exif_updater.update_exif_from_photos(p)
                 if exif_warn:
                     print_warning(f"Warning running exiftool: {exif_warn}")
                 if exif_error:

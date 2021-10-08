@@ -1,4 +1,6 @@
-""" datetime.datetime helper functions for converting to/from UTC """
+""" datetime.datetime helper functions for converting to/from UTC and other datetime manipulations"""
+
+__version__ = "2021.10.8"
 
 import datetime
 
@@ -6,6 +8,7 @@ import datetime
 # https://stackoverflow.com/questions/13994594/how-to-add-timezone-into-a-naive-datetime-instance-in-python/13994611#13994611
 
 
+# TODO: look at https://github.com/regebro/tzlocal for more robust implementation
 def get_local_tz(dt: datetime.datetime) -> datetime.tzinfo:
     """Return local timezone as datetime.timezone tzinfo for dt
 
@@ -172,3 +175,22 @@ def datetime_to_new_tz(dt: datetime.datetime, offset):
     time_delta = datetime.timedelta(seconds=offset)
     tz = datetime.timezone(time_delta)
     return dt.astimezone(tz=tz)
+
+
+def utc_offset_seconds(dt: datetime.datetime) -> int:
+    """Return offset in seconds from UTC for timezone aware datetime.datetime object
+
+    Args:
+        dt: datetime.datetime object
+
+    Returns:
+        offset in seconds from UTC
+
+    Raises:
+        ValueError if dt does not have timezone information
+    """
+
+    if dt.tzinfo is not None and dt.tzinfo.utcoffset(dt) is not None:
+        return dt.tzinfo.utcoffset(dt).total_seconds()
+    else:
+        raise ValueError("dt does not have timezone info")
