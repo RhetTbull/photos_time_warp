@@ -29,6 +29,7 @@ from cloup.constraints import (
 from osxphotos.exiftool import get_exiftool_path
 from photoscript import Photo, PhotosLibrary
 from rich.console import Console
+from rich.highlighter import NullHighlighter
 
 from ._version import __version__
 from .compare_exif import ExifDiff, PhotoCompare
@@ -48,20 +49,20 @@ from .utils import pluralize
 APP_NAME = "photos_time_warp"
 
 # Set up rich console
-CONSOLE = Console()
-CONSOLE_STDERR = Console(stderr=True)
+_console = Console()
+_console_stderr = Console(stderr=True)
 
 # if True, shows verbose output, controlled via --verbose flag
-VERBOSE = False
+_verbose = False
 
 # format for pretty printing date/times
-DATETIME_FORMAT = "%Y:%m:%d %H:%M:%S%z"
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S%z"
 
 
 def verbose(message_str, **kwargs):
-    if not VERBOSE:
+    if not _verbose:
         return
-    CONSOLE.print(message_str, **kwargs)
+    _console.print(message_str, **kwargs)
 
 
 def print_help_msg(command):
@@ -71,17 +72,17 @@ def print_help_msg(command):
 
 def print_error(message):
     """Print error message to stderr with rich"""
-    CONSOLE_STDERR.print(message, style="bold red")
+    _console_stderr.print(message, style="bold red")
 
 
 def print_warning(message):
     """Print warning message to stdout with rich"""
-    CONSOLE.print(message, style="bold yellow")
+    _console.print(message, style="bold yellow")
 
 
 def echo(message):
     """print to stdout using rich"""
-    CONSOLE.print(message)
+    _console.print(message)
 
 
 requires_one = RequireExactly(1).rephrased(
@@ -304,7 +305,7 @@ formatter_settings = HelpFormatter.settings(
         "-L",
         metavar="PHOTOS_LIBRARY_PATH",
         type=click.Path(),
-        help="Path to Photos library (e.g. '~/Pictures/Photos\ Library.photoslibrary'. "
+        help=r"Path to Photos library (e.g. '~/Pictures/Photos\ Library.photoslibrary'). "
         f"This is not likely needed as {APP_NAME} will usually be able to locate the path to the open Photos library. "
         "Use --library only if you get an error that the Photos library cannot be located.",
     ),
@@ -324,6 +325,12 @@ formatter_settings = HelpFormatter.settings(
         type=click.Path(exists=True),
         help="Optional path to exiftool executable (will look in $PATH if not specified).",
     ),
+    option(
+        "--plain",
+        is_flag=True,
+        help="Plain text mode.  Do not use rich output.",
+        hidden=True,
+    ),
 )
 @constraint(If("match_time", then=requires_one), ["timezone"])
 @constraint(If("add_to_album", then=requires_one), ["compare_exif"])
@@ -342,18 +349,26 @@ def cli(
     exiftool_path,
     verbose_,
     library,
+    plain,
 ):
     """Adjust date/time/timezone of photos in Apple Photos.
     Changes will be applied to all photos currently selected in Photos.
     photos_time_warp cannot operate on photos selected in a Smart Album;
     select photos in a regular album or in the 'All Photos' view.
     """
-    global VERBOSE
-    VERBOSE = verbose_
+    global _verbose
+    _verbose = verbose_
 
     if exiftool:
         exiftool_path = exiftool_path or get_exiftool_path()
         verbose(f"exiftool path: {exiftool_path}")
+
+    if plain:
+        # Plain text mode, disable rich output (used for testing)
+        global _console
+        global _console_stderr
+        _console = Console(highlighter=NullHighlighter())
+        _console_stderr = Console(stderr=True, highlighter=NullHighlighter())
 
     try:
         photos = PhotosLibrary().selection
@@ -456,7 +471,7 @@ def cli(
 
     echo(f"Processing {len(photos)} {pluralize(len(photos), 'photo', 'photos')}")
     # send progress bar output to /dev/null if verbose to hide the progress bar
-    fp = open(os.devnull, "w") if VERBOSE else None
+    fp = open(os.devnull, "w") if _verbose else None
     with click.progressbar(photos, file=fp) as bar:
         for p in bar:
             if any([date, time, date_delta, time_delta]):
