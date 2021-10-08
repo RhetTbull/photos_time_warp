@@ -2,8 +2,7 @@
 
 import datetime
 
-from photos_time_warp.parse_inspect import CompareValues, InspectValues
-
+from tests.parse_output import CompareValues, InspectValues
 
 TEST_LIBRARY = "TestTimeWarp-10.15.7.photoslibrary"
 
@@ -122,14 +121,24 @@ CATALINA_PHOTOS_5 = {
     "exiftool": {
         # IMG_6522.jpeg
         "uuid": "FD1E3A36-3E65-48AF-9B14-DCFF65A9D3D2",
+        # match,tz_value,time_delta_value,expected_date,exif_date,exif_offset
         "parameters": [
             (
+                True,
                 "-0300",
                 "+1 hour",
                 "2021-10-02 13:56:11-0300",
                 "2021:10:02 13:56:11",
                 "-03:00",
-            )
+            ),
+            (
+                False,
+                "-0400",
+                "+2 hours",
+                "2021-10-02 14:56:11-0400",
+                "2021:10:02 14:56:11",
+                "-04:00",
+            ),
         ],
     },
 }

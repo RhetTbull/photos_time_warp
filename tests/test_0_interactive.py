@@ -8,7 +8,7 @@ from click.testing import CliRunner
 from osxphotos import PhotosDB
 from osxphotos.exiftool import ExifTool
 
-from photos_time_warp.parse_inspect import parse_compare_exif, parse_inspect_output
+from tests.parse_output import parse_compare_exif, parse_inspect_output
 from tests.conftest import (
     copy_photos_library,
     get_os_version,
@@ -242,12 +242,13 @@ def test_match(photoslib, suspend_capture, input_value, expected):
 
 
 @pytest.mark.parametrize(
-    "tz_value,time_delta_value,expected_date,exif_date,exif_offset",
+    "match,tz_value,time_delta_value,expected_date,exif_date,exif_offset",
     TEST_DATA["exiftool"]["parameters"],
 )
 def test_exiftool(
     photoslib,
     suspend_capture,
+    match,
     tz_value,
     time_delta_value,
     expected_date,
@@ -262,18 +263,21 @@ def test_exiftool(
         say(prompt)
         input(f"\n{prompt}")
 
+    cli_args = [
+        "--timezone",
+        tz_value,
+        "--time-delta",
+        time_delta_value,
+        "--exiftool",
+        "--plain",
+    ]
+    if match:
+        cli_args.append("--match-time")
+
     runner = CliRunner()
     result = runner.invoke(
         cli,
-        [
-            "--timezone",
-            tz_value,
-            "--time-delta",
-            time_delta_value,
-            "--match-time",
-            "--exiftool",
-            "--plain",
-        ],
+        cli_args,
     )
     assert result.exit_code == 0
     result = runner.invoke(cli, ["--inspect", "--plain"])
@@ -282,8 +286,7 @@ def test_exiftool(
 
     photo = photoslib.selection[0]
     uuid = photo.uuid
-    photosdb = PhotosDB()
-    path = photosdb.get_photo(uuid).path
+    path = PhotosDB().get_photo(uuid).path
     exif = ExifTool(path)
     exifdict = exif.asdict()
     assert exifdict["EXIF:DateTimeOriginal"] == exif_date
