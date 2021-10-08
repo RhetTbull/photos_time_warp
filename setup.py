@@ -56,6 +56,11 @@ setup(
         "tenacity>=8.0.1,<9.0.0",
     ],
     python_requires=">=3.7",
-    entry_points={"console_scripts": ["photos_time_warp=photos_time_warp.cli:cli"]},
+    entry_points={
+        "console_scripts": [
+            "photos_time_warp=photos_time_warp.cli:cli",
+            "ptw=photos_time_warp.cli:cli",
+        ]
+    },
     include_package_data=True,
 )
