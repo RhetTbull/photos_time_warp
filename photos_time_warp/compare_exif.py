@@ -9,19 +9,7 @@ from photoscript import Photo
 
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .phototz import PhotoTimeZone
-
-from .utils import noop
-
-
-def red(msg: str) -> str:
-    """Return red string in rich markdown"""
-    return f"[red]{msg}[/red]"
-
-
-def green(msg: str) -> str:
-    """Return green string in rich markdown"""
-    return f"[green]{msg}[/green]"
-
+from .utils import green, noop, red
 
 ExifDiff = namedtuple(
     "ExifDiff",

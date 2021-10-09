@@ -30,6 +30,7 @@ from osxphotos.exiftool import get_exiftool_path
 from photoscript import Photo, PhotosLibrary
 from rich.console import Console
 from rich.highlighter import NullHighlighter
+from rich.traceback import install
 
 from ._version import __version__
 from .compare_exif import ExifDiff, PhotoCompare
@@ -43,7 +44,7 @@ from .timeutils import (
     utc_offset_string_to_seconds,
 )
 from .timezones import Timezone
-from .utils import pluralize
+from .utils import green, pluralize, red
 
 # name of the script
 APP_NAME = "photos_time_warp"
@@ -89,17 +90,6 @@ requires_one = RequireExactly(1).rephrased(
     help="requires one",
     error=f"it must be used with:\n" f"{ErrorFmt.param_list}",
 )
-
-
-# TODO: add these to utils
-def red(msg: str) -> str:
-    """Return red string in rich markdown"""
-    return f"[red]{msg}[/red]"
-
-
-def green(msg: str) -> str:
-    """Return green string in rich markdown"""
-    return f"[green]{msg}[/green]"
 
 
 class DateTimeISO8601(click.ParamType):
@@ -375,6 +365,11 @@ def cli(
     photos_time_warp cannot operate on photos selected in a Smart Album;
     select photos in a regular album or in the 'All Photos' view.
     """
+
+    # install rich traceback output
+    install(show_locals=True)
+
+    # used to control whether to print out verbose output
     global _verbose
     _verbose = verbose_
 
