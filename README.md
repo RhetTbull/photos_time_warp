@@ -192,7 +192,8 @@ Feedback and contributions of all kinds welcome!  Please open an [issue](https:/
 
 ## Related Projects
 
-- [osxphotos](https://github.com/RhetTbull/osxphotos) export photos and metadata from Apple Photos.
+- [osxphotos](https://github.com/RhetTbull/osxphotos) Export photos and metadata from Apple Photos.
+- [exif2findertags](https://github.com/RhetTbull/exif2findertags) Read EXIF metadata from image and video files and convert it to macOS Finder tags and/or Finder comments.
 
 ## Warranty 
 
