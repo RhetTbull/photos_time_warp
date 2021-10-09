@@ -370,7 +370,7 @@ def cli(
     library,
     plain,
 ):
-    """Adjust date/time/timezone of photos in Apple Photos.
+    """photos_time_warp: adjust date/time/timezone of photos in Apple Photos.
     Changes will be applied to all photos currently selected in Photos.
     photos_time_warp cannot operate on photos selected in a Smart Album;
     select photos in a regular album or in the 'All Photos' view.

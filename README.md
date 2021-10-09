@@ -15,9 +15,9 @@ photos_time_warp has been well tested on macOS Catalina (10.15).  It should work
 
 **Caution**: This app directly modifies your Photos library database using undocumented features.  It may corrupt, damage, or destroy your Photos library.  Use at your own caution.  I strongly recommend you make a backup of your Photos library before using this script (e.g. use Time Machine).  See also [Warranty](#Warranty). 
 
-## Synopsis
+## Examples 
 
-### Add 1 day to the date of each photo
+### Add 1 day to the date of each photo**
 
 `photos_time_warp --date-delta 1`
 
@@ -41,15 +41,17 @@ or
 
 `photos_time_warp --time 14:30 --timezone +0100`
 
-### Subtract 1 week to the date for each photo, add 3 hours to the time, set the timezone to UTC -07:00 (Pacific Daylight Time) and also use exiftool to update the EXIF metadata accordingly in the original file; use --verbose to print additional details
+### Subtract 1 week from the date for each photo, add 3 hours to the time, set the timezone to UTC -07:00 (Pacific Daylight Time) and also use exiftool to update the EXIF metadata accordingly in the original file; use --verbose to print additional details
 
 `photos_time_warp --date-delta "-1 week" --time-delta "+3 hours" --timezone -0700 --push-exif --verbose`
 
-For this to work, you'll need to install the third-party [exiftool](https://exiftool.org/) utility.
+For this to work, you'll need to install the third-party [exiftool](https://exiftool.org/) utility.  If you use [homebrew](https://brew.sh/) you can do this with `brew install exiftool`.
 
-### Set the timezone to UTC +03:00 for each photo but the time the same (that is, don't adjust time for the new timezone)
+### Set the timezone to UTC +03:00 for each photo but keep the time the same (that is, don't adjust time for the new timezone)
 
 `photos_time_warp --timezone 0300 --match-time`
+
+*Note on timezones and times*: In Photos, when you change the timezone, Photos assumes the time itself was correct for the previous timezone and adjusts the time accordingly to the new timezone.  E.g. if the photo's time is `13:00` and the timezone is `GMT -07:00` and you adjust the timezone one hour east to `GMT -06:00`, Photos will change the time of the photo to `14:00`.  photos_time_warp follows this behavior.  Using `--match-time` allows you to adjust the timezone but keep the same time without adjustment. For example, if your camera clock was correct but lacked timezone information and you took photos in one timezone but imported them to photos in another, Photos will add the timezone of the computer at time of import.  You can use photos_time_warp to adjust the timezone but keep the time using `--match-time`.
 
 ## Installation
 
@@ -59,7 +61,8 @@ I recommend you install `photos_time_warp` with [pipx](https://github.com/pipxpr
 - Install `homebrew` according to instructions at [https://brew.sh/](https://brew.sh/)
 - Type the following into Terminal: `brew install pipx`
 - Then type this: `pipx install git+https://github.com/RhetTbull/photos_time_warp.git`
-- Now you should be able to run `photos_time_warp` by typing: `photos_time_warp`
+- Now you should be able to run `photos_time_warp` by typing: `photos_time_warp`.  
+- *Note*: photos_time_warp will also install a shortcut command `ptw` that can be used to start photos_time_warp.
 
 Once you've installed `photos_time_warp` with pipx, to upgrade to the latest version:
 
