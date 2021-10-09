@@ -43,7 +43,7 @@ or
 
 ### Subtract 1 week to the date for each photo, add 3 hours to the time, set the timezone to UTC -07:00 (Pacific Daylight Time) and also use exiftool to update the EXIF metadata accordingly in the original file; use --verbose to print additional details
 
-`photos_time_warp --date-delta "-1 week" --time-delta "+3 hours" --timezone -0700 --exiftool --verbose`
+`photos_time_warp --date-delta "-1 week" --time-delta "+3 hours" --timezone -0700 --push-exif --verbose`
 
 For this to work, you'll need to install the third-party [exiftool](https://exiftool.org/) utility.
 
