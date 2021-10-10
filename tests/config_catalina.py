@@ -14,6 +14,7 @@ CATALINA_PHOTOS_5 = {
         "apple tree": "IMG_6526.jpeg",
         "marigold flowers": "IMG_6517.jpeg",
         "multi-colored zinnia flowers": "IMG_6506.jpeg",
+        "sunset": "IMG_6551.mov",
     },
     "inspect": {
         # IMG_6501.jpeg
@@ -193,7 +194,7 @@ CATALINA_PHOTOS_5 = {
             "IMG_6526.jpeg",
             "1A61156A-5747-42DE-A9B3-4A468CC49D9E",
             "2021-10-02 15:15:00",
-            "",
+            "2021-10-02 00:00:00",
             "-0400",
             "-0700",
         ),
@@ -201,7 +202,7 @@ CATALINA_PHOTOS_5 = {
             "IMG_6526.jpeg",
             "1A61156A-5747-42DE-A9B3-4A468CC49D9E",
             "2021-10-02 00:00:00",
-            "",
+            "2021-10-02 00:00:00",
             "-0700",
             "-0700",
         ),
@@ -242,6 +243,81 @@ CATALINA_PHOTOS_5 = {
             "",
             "-0700",
             "",
-        )
+        ),
+    },
+    "compare_video_1": {
+        # IMG_6551.mov
+        "expected": [
+            CompareValues(
+                "IMG_6551.mov",
+                "16BEC0BE-4188-44F1-A8F1-7250E978AD12",
+                "2021-10-04 19:01:03",
+                "2021-10-04 19:01:03",
+                "-0700",
+                "-0700",
+            )
+        ]
+    },
+    "video_date_delta": {
+        # IMG_6551.mov
+        "parameters": [("-1 day", "2021-10-03 19:01:03-0700")]
+    },
+    "video_time_delta": {
+        # IMG_6551.mov
+        "parameters": [("+1 hour", "2021-10-03 20:01:03-0700")]
+    },
+    "video_date": {
+        # IMG_6551.mov
+        "parameters": [("2021-10-04", "2021-10-04 20:01:03-0700")]
+    },
+    "video_time": {
+        # IMG_6551.mov
+        "parameters": [("20:00:00", "2021-10-04 20:00:00-0700")]
+    },
+    "video_time_zone": {
+        # IMG_6551.mov
+        "parameters": [("-0400", "2021-10-04 23:00:00-0400", "-0400")]
+    },
+    "video_match": {
+        # IMG_6551.mov
+        "parameters": [("-0200", "2021-10-04 23:00:00-0200")]
+    },
+    "video_push_exif": {
+        # IMG_6501.jpeg
+        "pre": CompareValues(
+            "IMG_6551.mov",
+            "16BEC0BE-4188-44F1-A8F1-7250E978AD12",
+            "2021-10-04 23:00:00",
+            "2021-10-04 19:01:03",
+            "-0200",
+            "-0700",
+        ),
+        "post": CompareValues(
+            "IMG_6551.mov",
+            "16BEC0BE-4188-44F1-A8F1-7250E978AD12",
+            "2021-10-04 23:00:00",
+            "2021-10-04 23:00:00",
+            "-0200",
+            "-0200",
+        ),
+    },
+    "video_pull_exif": {
+        # IMG_6501.jpeg
+        "pre": CompareValues(
+            "IMG_6551.mov",
+            "16BEC0BE-4188-44F1-A8F1-7250E978AD12",
+            "2021-10-05 13:00:00",
+            "2021-10-04 23:00:00",
+            "-0500",
+            "-0200",
+        ),
+        "post": CompareValues(
+            "IMG_6551.mov",
+            "16BEC0BE-4188-44F1-A8F1-7250E978AD12",
+            "2021-10-04 23:00:00",
+            "2021-10-04 23:00:00",
+            "-0200",
+            "-0200",
+        ),
     },
 }

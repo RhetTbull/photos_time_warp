@@ -8,6 +8,7 @@ from osxphotos.exiftool import ExifTool
 from photoscript import Photo
 
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
+from .exif_updater import get_exif_date_time_offset
 from .phototz import PhotoTimeZone
 from .utils import green, noop, red
 
@@ -58,17 +59,14 @@ class PhotoCompare:
         photo_path = photo_.path
         if photo_path:
             exif = ExifTool(filepath=photo_path, exiftool=self.exiftool_path)
-            exif_dict = exif.asdict(tag_groups=False)
-            exif_date = exif_dict.get("DateTimeOriginal", "")
-            try:
-                exif_date, exif_time = exif_date.split(" ", 1)
-            except ValueError:
-                exif_date = exif_date
-                exif_time = ""
-            exif_date = exif_date.replace(":", "-")
-            exif_date = exif_date + " " + exif_time if exif_time else exif_date
-            exif_offset = exif_dict.get("OffsetTimeOriginal", "")
-            exif_offset = exif_offset.replace(":", "")
+            exif_dict = exif.asdict()
+            exif_dt_offset = get_exif_date_time_offset(exif_dict)
+            exif_offset = exif_dt_offset.offset_str
+            exif_date = (
+                exif_dt_offset.datetime.strftime("%Y-%m-%d %H:%M:%S")
+                if exif_dt_offset.datetime
+                else ""
+            )
         else:
             exif_date = ""
             exif_offset = ""

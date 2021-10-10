@@ -26,7 +26,7 @@ from .utils import noop
 # default_time is True if the time is not specified in the exif otherwise False (and if True, set to 00:00:00)
 # default_offset is True if timezone offset is not specified in the exif otherwise False (and if True, set to +00:00)
 ExifDateTime = namedtuple(
-    "ExifDateTime", ["datetime", "offset_seconds", "default_time"]
+    "ExifDateTime", ["datetime", "offset_seconds", "offset_str", "default_time"]
 )
 
 
@@ -200,55 +200,58 @@ class ExifUpdater:
         """
         exiftool = ExifTool(filepath=photo_path, exiftool=self.exiftool_path)
         exif = exiftool.asdict()
+        return get_exif_date_time_offset(exif)
 
-        default_time = False
-        # search these fields in this order for date/time/timezone
-        for dt_str in [
-            "EXIF:DateTimeOriginal",
-            "EXIF:CreateDate",
-            "QuickTime:CreationDate",
-            "QuickTime:CreateDate",
-            "IPTC:DateCreated",
-            "XMP-exif:DateTimeOriginal",
-            "XMP-xmp:CreateDate",
-        ]:
-            dt = exif.get(dt_str, None)
-            if dt and dt_str == "IPTC:DateCreated":
-                # also need time
-                time_ = exif.get("IPTC:TimeCreated", None)
-                if not time_:
-                    time_ = "00:00:00"
-                    default_time = True
-                dt = f"{dt} {time_}"
-            if dt:
-                break
-        else:
-            # no date/time found
-            dt = None
 
-        # try to get offset from EXIF:OffsetTimeOriginal
-        offset = exif.get("EXIF:OffsetTimeOriginal", None)
-        if dt and not offset:
-            # see if offset set in the dt string
-            matched = re.match(
-                r"\d{4}:\d{2}:\d{2}\s\d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2})", dt
-            )
-            offset = matched.group(1) if matched else None
-
+def get_exif_date_time_offset(exif: dict) -> ExifDateTime:
+    """Get datetime/offset from an exif dict as returned by osxphotos.exiftool.ExifTool.asdict()"""
+    default_time = False
+    # search these fields in this order for date/time/timezone
+    for dt_str in [
+        "EXIF:DateTimeOriginal",
+        "EXIF:CreateDate",
+        "QuickTime:CreationDate",
+        "QuickTime:CreateDate",
+        "IPTC:DateCreated",
+        "XMP-exif:DateTimeOriginal",
+        "XMP-xmp:CreateDate",
+    ]:
+        dt = exif.get(dt_str)
+        if dt and dt_str == "IPTC:DateCreated":
+            # also need time
+            time_ = exif.get("IPTC:TimeCreated")
+            if not time_:
+                time_ = "00:00:00"
+                default_time = True
+            dt = f"{dt} {time_}"
         if dt:
-            # make sure we have time
-            matched = re.match(r"\d{4}:\d{2}:\d{2}\s(\d{2}:\d{2}:\d{2})", dt)
-            if not matched:
-                # make sure we have date
-                matched = re.match(r"^(\d{4}:\d{2}:\d{2})", dt)
-                if matched:
-                    # set time to 00:00:00
-                    dt = f"{matched.group(1)} 00:00:00"
-                    default_time = True
+            break
+    else:
+        # no date/time found
+        dt = None
 
-        offset_seconds = exif_offset_to_seconds(offset) if offset else None
+    # try to get offset from EXIF:OffsetTimeOriginal
+    offset = exif.get("EXIF:OffsetTimeOriginal")
+    if dt and not offset:
+        # see if offset set in the dt string
+        matched = re.match(r"\d{4}:\d{2}:\d{2}\s\d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2})", dt)
+        offset = matched.group(1) if matched else None
 
-        if dt and offset:
+    if dt:
+        # make sure we have time
+        matched = re.match(r"\d{4}:\d{2}:\d{2}\s(\d{2}:\d{2}:\d{2})", dt)
+        if not matched:
+            # make sure we have date
+            matched = re.match(r"^(\d{4}:\d{2}:\d{2})", dt)
+            if matched:
+                # set time to 00:00:00
+                dt = f"{matched.group(1)} 00:00:00"
+                default_time = True
+
+    offset_seconds = exif_offset_to_seconds(offset) if offset else None
+
+    if dt:
+        if offset:
             # drop offset from dt string and add it back on in datetime %z format
             dt = re.sub(r"[+-]\d{2}:\d{2}$", "", dt)
             offset = offset.replace(":", "")
@@ -256,8 +259,10 @@ class ExifUpdater:
 
             # convert to datetime
             dt = datetime.datetime.strptime(dt, "%Y:%m:%d %H:%M:%S%z")
-        elif dt:
+        else:
             # convert to naive datetime
             dt = datetime.datetime.strptime(dt, "%Y:%m:%d %H:%M:%S")
 
-        return ExifDateTime(dt, offset_seconds, default_time)
+    # format offset in form +/-hhmm
+    offset_str = offset.replace(":", "") if offset else ""
+    return ExifDateTime(dt, offset_seconds, offset_str, default_time)
