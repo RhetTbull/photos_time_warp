@@ -49,7 +49,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     install_requires=[
-        "osxphotos>=0.43.8",
+        "osxphotos>=0.43.7",
         "click==8.0.1,<9.0.0",
         "cloup>=0.11.0,<0.12.0",
         "rich>=10.6.0,<11.0.0",
