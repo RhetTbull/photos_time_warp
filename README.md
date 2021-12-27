@@ -19,7 +19,7 @@ photos_time_warp has been well tested on macOS Catalina (10.15).  It should work
 
 ## Examples 
 
-### Add 1 day to the date of each photo**
+### Add 1 day to the date of each photo
 
 `photos_time_warp --date-delta 1`
 
