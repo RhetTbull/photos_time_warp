@@ -2,7 +2,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Batch adjust the date, time, or timezone for photos in Apple Photos. Works on macOS only.
@@ -215,6 +215,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tr>
     <td align="center"><a href="http://jmuccigr.github.io/"><img src="https://avatars.githubusercontent.com/u/615115?v=4?s=100" width="100px;" alt=""/><br /><sub><b>John Muccigrosso</b></sub></a><br /><a href="https://github.com/RhetTbull/photos_time_warp/issues?q=author%3AJmuccigr" title="Bug reports">🐛</a> <a href="#ideas-Jmuccigr" title="Ideas, Planning, & Feedback">🤔</a></td>
+    <td align="center"><a href="https://nomadgate.com"><img src="https://avatars.githubusercontent.com/u/1646041?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Thomas K. Running</b></sub></a><br /><a href="https://github.com/RhetTbull/photos_time_warp/commits?author=tkrunning" title="Code">💻</a> <a href="https://github.com/RhetTbull/photos_time_warp/issues?q=author%3Atkrunning" title="Bug reports">🐛</a></td>
   </tr>
 </table>
 
