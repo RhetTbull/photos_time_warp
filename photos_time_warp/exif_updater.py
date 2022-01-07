@@ -11,15 +11,15 @@ from osxphotos.exiftool import ExifTool
 from photoscript import Photo
 
 from .datetime_utils import (
+    datetime_has_tz,
     datetime_naive_to_local,
     datetime_remove_tz,
     datetime_to_new_tz,
     datetime_tz_to_utc,
     datetime_utc_to_local,
-    datetime_has_tz,
 )
 from .phototz import PhotoTimeZone, PhotoTimeZoneUpdater
-from .timezones import format_offset_time, Timezone
+from .timezones import Timezone, format_offset_time
 from .utils import noop
 
 # date/time/timezone extracted from regex as a timezone aware datetime.datetime object
@@ -256,12 +256,16 @@ def get_exif_date_time_offset(exif: dict) -> ExifDateTime:
             dt = re.sub(r"[+-]\d{2}:\d{2}$", "", dt)
             offset = offset.replace(":", "")
             dt = f"{dt}{offset}"
-
-            # convert to datetime
-            dt = datetime.datetime.strptime(dt, "%Y:%m:%d %H:%M:%S%z")
+            dt_format = "%Y:%m:%d %H:%M:%S%z"
         else:
-            # convert to naive datetime
-            dt = datetime.datetime.strptime(dt, "%Y:%m:%d %H:%M:%S")
+            dt_format = "%Y:%m:%d %H:%M:%S"
+
+        # convert to datetime
+        # some files can have bad date/time data, (e.g. #21, Date/Time Original = 0000:00:00 00:00:00)
+        try:
+            dt = datetime.datetime.strptime(dt, dt_format)
+        except ValueError:
+            dt = None
 
     # format offset in form +/-hhmm
     offset_str = offset.replace(":", "") if offset else ""
