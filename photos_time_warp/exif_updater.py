@@ -261,7 +261,7 @@ def get_exif_date_time_offset(exif: dict) -> ExifDateTime:
             dt_format = "%Y:%m:%d %H:%M:%S"
 
         # convert to datetime
-        # some files can have bad date/time data, (e.g. #21, Date/Time Original = 0000:00:00 00:00:00)
+        # some files can have bad date/time data, (e.g. #24, Date/Time Original = 0000:00:00 00:00:00)
         try:
             dt = datetime.datetime.strptime(dt, dt_format)
         except ValueError:
