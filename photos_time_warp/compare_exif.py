@@ -10,7 +10,7 @@ from photoscript import Photo
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .exif_updater import get_exif_date_time_offset
 from .phototz import PhotoTimeZone
-from .utils import green, noop, red
+from .utils import change_color, no_change_color, noop
 
 ExifDiff = namedtuple(
     "ExifDiff",
@@ -90,28 +90,62 @@ class PhotoCompare:
             exif_time = ""
 
         if photos_date != exif_date:
-            photos_date = red(photos_date)
-            exif_date = red(exif_date)
+            photos_date = change_color(photos_date)
+            exif_date = change_color(exif_date)
             diff = True
         else:
-            photos_date = green(photos_date)
-            exif_date = green(exif_date)
+            photos_date = no_change_color(photos_date)
+            exif_date = no_change_color(exif_date)
 
         if photos_time != exif_time:
-            photos_time = red(photos_time)
-            exif_time = red(exif_time)
+            photos_time = change_color(photos_time)
+            exif_time = change_color(exif_time)
             diff = True
         else:
-            photos_time = green(photos_time)
-            exif_time = green(exif_time)
+            photos_time = no_change_color(photos_time)
+            exif_time = no_change_color(exif_time)
 
         if photos_tz != exif_tz:
-            photos_tz = red(photos_tz)
-            exif_tz = red(exif_tz)
+            photos_tz = change_color(photos_tz)
+            exif_tz = change_color(exif_tz)
             diff = True
         else:
-            photos_tz = green(photos_tz)
-            exif_tz = green(exif_tz)
+            photos_tz = no_change_color(photos_tz)
+            exif_tz = no_change_color(exif_tz)
+
+        return ExifDiff(
+            diff,
+            photos_date,
+            photos_time,
+            photos_tz,
+            exif_date,
+            exif_time,
+            exif_tz,
+        )
+
+    def compare_exif_no_markup(self, photo: Photo) -> ExifDiff:
+        """Compare date/time/timezone in Photos to the exif data and return an ExifDiff named tuple;
+
+        Args:
+            photo (Photo): Photo object to compare
+        """
+        photos_date, photos_tz, exif_date, exif_tz = self.compare_exif(photo)
+        diff = False
+        photos_date, photos_time = photos_date.split(" ", 1)
+        try:
+            exif_date, exif_time = exif_date.split(" ", 1)
+        except ValueError:
+            exif_date = exif_date
+            exif_time = ""
+
+        if photos_date != exif_date:
+            diff = True
+
+        if photos_time != exif_time:
+            diff = True
+
+        if photos_tz != exif_tz:
+            diff = True
 
         return ExifDiff(
             diff,

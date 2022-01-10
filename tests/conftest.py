@@ -1,10 +1,10 @@
 import os
 import pathlib
-
-import pytest
-from applescript import AppleScript
+import tempfile
 
 import photoscript
+import pytest
+from applescript import AppleScript
 from photoscript.utils import ditto
 
 
@@ -102,3 +102,12 @@ def suspend_capture(pytestconfig):
             self.capmanager.resume_global_capture()
 
     yield suspend_guard()
+
+@pytest.fixture
+def output_file():
+    """Create a temporary filename for writing output"""
+    tempdir = tempfile.gettempdir()
+    fd, filename = tempfile.mkstemp(dir=tempdir)
+    os.close(fd)
+    yield filename
+    os.remove(filename)

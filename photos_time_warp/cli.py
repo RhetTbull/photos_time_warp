@@ -44,7 +44,7 @@ from .timeutils import (
     utc_offset_string_to_seconds,
 )
 from .timezones import Timezone
-from .utils import green, pluralize, red
+from .utils import change_color, filename_color, no_change_color, pluralize, uuid_color
 
 # name of the script
 APP_NAME = "photos_time_warp"
@@ -202,6 +202,57 @@ formatter_settings = HelpFormatter.settings(
 )
 
 
+def update_photo_date_time(
+    photo: Photo, date, time, date_delta, time_delta, plain: bool = False
+):
+    """Update date, time in photo"""
+    photo_date = photo.date
+    new_photo_date = update_datetime(
+        photo_date, date=date, time=time, date_delta=date_delta, time_delta=time_delta
+    )
+    filename = photo.filename if plain else filename_color(photo.filename)
+    uuid = photo.uuid if plain else uuid_color(photo.uuid)
+    if new_photo_date != photo_date:
+        photo.date = new_photo_date
+        verbose(
+            f"Updated date/time for photo {filename} ({uuid}) from: {photo_date} to {new_photo_date}"
+        )
+    else:
+        verbose(
+            f"Skipped date/time update for photo {filename} ({uuid}): nothing to do"
+        )
+
+
+def update_photo_time_for_new_timezone(
+    library_path: str, photo: Photo, new_timezone: Timezone, plain: bool = False
+):
+    """Update time in photo to keep it the same time but in a new timezone
+
+    For example, photo time is 12:00+0100 and new timezone is +0200,
+    so adjust photo time by 1 hour so it will now be 12:00+0200 instead of
+    13:00+0200 as it would be with no adjustment to the time"""
+    old_timezone = PhotoTimeZone(library_path=library_path).get_timezone(photo)[0]
+    # need to move time in opposite direction of timezone offset so that
+    # photo time is the same time but in the new timezone
+    delta = old_timezone - new_timezone.offset
+    photo_date = photo.date
+    new_photo_date = update_datetime(
+        dt=photo_date, time_delta=datetime.timedelta(seconds=delta)
+    )
+    filename = photo.filename if plain else filename_color(photo.filename)
+    uuid = photo.uuid if plain else uuid_color(photo.uuid)
+    if photo_date != new_photo_date:
+        photo.date = new_photo_date
+        verbose(
+            f"Adjusted date/time for photo {filename} ({uuid}) to match "
+            f"previous time {photo_date} but in new timezone {new_timezone}."
+        )
+    else:
+        verbose(
+            f"Skipping date/time update for photo {filename} ({photo.uuid}), already matches new timezone {new_timezone}"
+        )
+
+
 @command(cls=PhotosTimeWarpCommand, formatter_settings=formatter_settings)
 @option_group(
     "Specify one or more command",
@@ -339,6 +390,19 @@ formatter_settings = HelpFormatter.settings(
         help="Plain text mode.  Do not use rich output.",
         hidden=True,
     ),
+    option(
+        "--output-file",
+        "-o",
+        type=click.File(mode="w"),
+        help="Output file. If not specified, output is written to stdout.",
+    ),
+    option(
+        "--terminal-width",
+        "-w",
+        type=int,
+        help="Terminal width in characters.",
+        hidden=True,
+    ),
 )
 @constraint(If("match_time", then=requires_one), ["timezone"])
 @constraint(If("add_to_album", then=requires_one), ["compare_exif"])
@@ -359,6 +423,8 @@ def cli(
     verbose_,
     library,
     plain,
+    output_file,
+    terminal_width,
 ):
     """photos_time_warp: adjust date/time/timezone of photos in Apple Photos.
     Changes will be applied to all photos currently selected in Photos.
@@ -373,16 +439,36 @@ def cli(
     global _verbose
     _verbose = verbose_
 
-    if any([compare_exif, push_exif, pull_exif]):
-        exiftool_path = exiftool_path or get_exiftool_path()
-        verbose(f"exiftool path: {exiftool_path}")
-
+    # redefined depending on --plain or --output-file
+    global _console
+    global _console_stderr
+    terminal_width = terminal_width or (1000 if output_file else None)
     if plain:
         # Plain text mode, disable rich output (used for testing)
-        global _console
-        global _console_stderr
-        _console = Console(highlighter=NullHighlighter())
-        _console_stderr = Console(stderr=True, highlighter=NullHighlighter())
+        _console = Console(
+            highlighter=NullHighlighter(),
+            file=output_file or sys.stdout,
+            width=terminal_width,
+        )
+        _console_stderr = Console(
+            stderr=True,
+            highlighter=NullHighlighter(),
+            width=terminal_width,
+        )
+    elif output_file:
+        # output to file
+        _console = Console(file=output_file, width=terminal_width)
+        _console_stderr = Console(stderr=True, width=terminal_width)
+    elif terminal_width:
+        # output to terminal with custom width
+        _console = Console(width=terminal_width)
+        _console_stderr = Console(stderr=True, width=terminal_width)
+
+    if any([compare_exif, push_exif, pull_exif]):
+        exiftool_path = exiftool_path or get_exiftool_path()
+        verbose(
+            f"exiftool path: {filename_color(exiftool_path) if not plain else exiftool_path}"
+        )
 
     try:
         photos = PhotosLibrary().selection
@@ -410,17 +496,19 @@ def cli(
         time=time,
         date_delta=date_delta,
         time_delta=time_delta,
+        plain=plain,
     )
 
     update_photo_time_for_new_timezone_ = partial(
         update_photo_time_for_new_timezone,
         library_path=library,
+        plain=plain,
     )
 
     if inspect:
         tzinfo = PhotoTimeZone(library_path=library)
         if photos:
-            print(
+            echo(
                 "filename, uuid, photo time (local), photo time, timezone offset, timezone name"
             )
         for photo in photos:
@@ -428,7 +516,7 @@ def cli(
             photo_date_local = datetime_naive_to_local(photo.date)
             photo_date_tz = datetime_to_new_tz(photo_date_local, tz_seconds)
             echo(
-                f"{photo.filename}, {photo.uuid}, {photo_date_local.strftime(DATETIME_FORMAT)}, {photo_date_tz.strftime(DATETIME_FORMAT)}, {tz_str}, {tz_name}"
+                f"{filename_color(photo.filename)}, {uuid_color(photo.uuid)}, {photo_date_local.strftime(DATETIME_FORMAT)}, {photo_date_tz.strftime(DATETIME_FORMAT)}, {tz_str}, {tz_name}"
             )
         sys.exit(0)
 
@@ -444,24 +532,32 @@ def cli(
                     "filename, uuid, photo time (Photos), photo time (EXIF), timezone offset (Photos), timezone offset (EXIF)"
                 )
         for photo in photos:
-            diff_results = photocomp.compare_exif_with_markup(photo)
-            filename = (
-                red(photo.filename) if diff_results.diff else green(photo.filename)
+            diff_results = (
+                photocomp.compare_exif_with_markup(photo)
+                if not plain
+                else photocomp.compare_exif_no_markup(photo)
             )
+            if not plain:
+                filename = (
+                    change_color(photo.filename)
+                    if diff_results.diff
+                    else no_change_color(photo.filename)
+                )
+            else:
+                filename = photo.filename
+            uuid = uuid_color(photo.uuid) if not plain else photo.uuid
             if album:
                 if diff_results.diff:
                     different_photos += 1
                     verbose(
-                        f"Photo {filename} ({photo.uuid}) has different date/time/timezone, adding to album '{album.name}'"
+                        f"Photo {filename} ({uuid}) has different date/time/timezone, adding to album '{album.name}'"
                     )
                     album.add(photo)
                 else:
-                    verbose(
-                        f"Photo {filename} ({photo.uuid}) has same date/time/timezone"
-                    )
+                    verbose(f"Photo {filename} ({uuid}) has same date/time/timezone")
             else:
                 echo(
-                    f"{filename}, {photo.uuid}, "
+                    f"{filename}, {uuid}, "
                     f"{diff_results.photos_date} {diff_results.photos_time}, {diff_results.exif_date} {diff_results.exif_time}, "
                     f"{diff_results.photos_tz}, {diff_results.exif_tz}"
                 )
@@ -512,50 +608,8 @@ def cli(
 
     echo("Done.")
 
-
-def update_photo_date_time(photo, date, time, date_delta, time_delta):
-    """Update date, time in photo"""
-    photo_date = photo.date
-    new_photo_date = update_datetime(
-        photo_date, date=date, time=time, date_delta=date_delta, time_delta=time_delta
-    )
-    if new_photo_date != photo_date:
-        photo.date = new_photo_date
-        verbose(
-            f"Updated date/time for photo {photo.filename} ({photo.uuid}) from: {photo_date} to {new_photo_date}"
-        )
-    else:
-        verbose(
-            f"Skipped date/time update for photo {photo.filename} ({photo.uuid}): nothing to do"
-        )
-
-
-def update_photo_time_for_new_timezone(
-    library_path: str, photo: Photo, new_timezone: Timezone
-):
-    """Update time in photo to keep it the same time but in a new timezone
-
-    For example, photo time is 12:00+0100 and new timezone is +0200,
-    so adjust photo time by 1 hour so it will now be 12:00+0200 instead of
-    13:00+0200 as it would be with no adjustment to the time"""
-    old_timezone = PhotoTimeZone(library_path=library_path).get_timezone(photo)[0]
-    # need to move time in opposite direction of timezone offset so that
-    # photo time is the same time but in the new timezone
-    delta = old_timezone - new_timezone.offset
-    photo_date = photo.date
-    new_photo_date = update_datetime(
-        dt=photo_date, time_delta=datetime.timedelta(seconds=delta)
-    )
-    if photo_date != new_photo_date:
-        photo.date = new_photo_date
-        verbose(
-            f"Adjusted date/time for photo {photo.filename} ({photo.uuid}) to match "
-            f"previous time {photo_date} but in new timezone {new_timezone}."
-        )
-    else:
-        verbose(
-            f"Skipping date/time update for photo {photo.filename} ({photo.uuid}), already matches new timezone {new_timezone}"
-        )
+    if output_file:
+        output_file.close()
 
 
 def main():
