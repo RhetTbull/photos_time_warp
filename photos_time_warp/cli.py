@@ -576,7 +576,10 @@ def cli(
 
     if any([push_exif, pull_exif]):
         exif_updater = ExifUpdater(
-            library_path=library, verbose=verbose, exiftool_path=exiftool_path
+            library_path=library,
+            verbose=verbose,
+            exiftool_path=exiftool_path,
+            plain=plain,
         )
 
     echo(f"Processing {len(photos)} {pluralize(len(photos), 'photo', 'photos')}")
