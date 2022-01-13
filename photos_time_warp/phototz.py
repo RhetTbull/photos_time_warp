@@ -186,9 +186,9 @@ class PhotoTimeZoneUpdater:
                         """
             results = execute(self.db_path, sql_update)
             self.verbose(
-                f"Updated timezone for photo {photo.filename} ({photo.uuid}) "
-                + f"from {row.ZTIMEZONENAME}, offset={row.ZTIMEZONEOFFSET} "
-                + f"to {self.tz_name}, offset={self.tz_offset}"
+                f"Updated timezone for photo [filename]{photo.filename}[/filename] ([uuid]{photo.uuid}[/uuid]) "
+                + f"from [tz]{row.ZTIMEZONENAME}[/tz], offset=[tz]{row.ZTIMEZONEOFFSET}[/tz] "
+                + f"to [tz]{self.tz_name}[/tz], offset=[tz]{self.tz_offset}[/tz]"
             )
         except Exception as e:
             raise e
