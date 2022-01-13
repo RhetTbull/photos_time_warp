@@ -20,7 +20,7 @@ from .datetime_utils import (
 )
 from .phototz import PhotoTimeZone, PhotoTimeZoneUpdater
 from .timezones import Timezone, format_offset_time
-from .utils import noop, filename_color, uuid_color
+from .utils import noop
 
 # date/time/timezone extracted from regex as a timezone aware datetime.datetime object
 # default_time is True if the time is not specified in the exif otherwise False (and if True, set to 00:00:00)
@@ -56,11 +56,11 @@ class ExifUpdater:
 
     def filename_color(self, filename: str) -> str:
         """Colorize filename for display in verbose output"""
-        return filename if self.plain else filename_color(filename)
+        return filename if self.plain else f"[filename]{filename}[/filename]"
 
     def uuid_color(self, uuid: str) -> str:
         """Colorize uuid for display in verbose output"""
-        return uuid if self.plain else uuid_color(uuid)
+        return uuid if self.plain else f"[uuid]{uuid}[/uuid]"
 
     def update_exif_from_photos(self, photo: Photo) -> Tuple[str, str]:
         """Update EXIF data in photo to match the date/time/timezone in Photos library
@@ -78,12 +78,14 @@ class ExifUpdater:
 
         if not _photo.path:
             self.verbose(
-                f"Skipping EXIF update for missing photo {self.filename_color(_photo.original_filename)} ({self.uuid_color(_photo.uuid)})"
+                "Skipping EXIF update for missing photo "
+                f"[filename]{_photo.original_filename}[/filename] ([uuid]{_photo.uuid}[/uuid])"
             )
             return "", ""
 
         self.verbose(
-            f"Updating EXIF data for {self.filename_color(photo.filename)} ({self.uuid_color(photo.uuid)})"
+            "Updating EXIF data for "
+            f"[filename]{photo.filename}[/filename] ([uuid]{photo.uuid}[/uuid])"
         )
 
         photo_date = datetime_naive_to_local(photo.date)
@@ -160,18 +162,21 @@ class ExifUpdater:
 
         if not _photo.path:
             self.verbose(
-                f"Skipping EXIF update for missing photo {self.filename_color(_photo.original_filename)} ({self.uuid_color(_photo.uuid)})"
+                "Skipping EXIF update for missing photo "
+                f"[filename]{_photo.original_filename}[/filename] ([uuid]{_photo.uuid}[/uuid])"
             )
             return None
 
         self.verbose(
-            f"Updating Photos from EXIF data for {self.filename_color(photo.filename)} ({self.uuid_color(photo.uuid)})"
+            "Updating Photos from EXIF data for "
+            f"[filename]{photo.filename}[/filename] ([uuid]{photo.uuid}[/uuid])"
         )
 
         dtinfo = self.get_date_time_offset_from_exif(_photo.path)
         if not dtinfo.datetime and not dtinfo.offset_seconds:
             self.verbose(
-                f"Skipping update for missing EXIF data in photo {self.filename_color(photo.filename)} ({self.uuid_color(photo.uuid)})"
+                "Skipping update for missing EXIF data in photo "
+                f"[filename]{photo.filename}[/filename] ([uuid]{photo.uuid}[/uuid])"
             )
             return None
 
@@ -183,7 +188,8 @@ class ExifUpdater:
             )
             tzupdater.update_photo(photo)
             self.verbose(
-                f"Updated timezone offset for photo  {self.filename_color(photo.filename)} ({self.uuid_color(photo.uuid)}): {timezone}"
+                "Updated timezone offset for photo "
+                f"[filename]{photo.filename}[/filename] ([uuid]{photo.uuid}[/uuid]): [tz]{timezone}[/tz]"
             )
 
         if dtinfo.datetime:
@@ -197,7 +203,8 @@ class ExifUpdater:
             # update date/time
             photo.date = local_datetime
             self.verbose(
-                f"Updated date/time for photo {self.filename_color(photo.filename)} ({self.uuid_color(photo.uuid)}): {local_datetime}"
+                "Updated date/time for photo "
+                f"[filename]{photo.filename}[/filename] ([uuid]{photo.uuid}[/uuid]): [time]{local_datetime}[/time]"
             )
 
         return None

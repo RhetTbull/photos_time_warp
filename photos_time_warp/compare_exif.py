@@ -10,7 +10,7 @@ from photoscript import Photo
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .exif_updater import get_exif_date_time_offset
 from .phototz import PhotoTimeZone
-from .utils import change_color, no_change_color, noop
+from .utils import noop
 
 ExifDiff = namedtuple(
     "ExifDiff",
@@ -24,6 +24,16 @@ ExifDiff = namedtuple(
         "exif_tz",
     ],
 )
+
+
+def change(msg: str) -> str:
+    """Add change tag to string"""
+    return f"[change]{msg}[/change]"
+
+
+def no_change(msg: str) -> str:
+    """Add no change tag to string"""
+    return f"[no_change]{msg}[/no_change]"
 
 
 class PhotoCompare:
@@ -90,28 +100,28 @@ class PhotoCompare:
             exif_time = ""
 
         if photos_date != exif_date:
-            photos_date = change_color(photos_date)
-            exif_date = change_color(exif_date)
+            photos_date = change(photos_date)
+            exif_date = change(exif_date)
             diff = True
         else:
-            photos_date = no_change_color(photos_date)
-            exif_date = no_change_color(exif_date)
+            photos_date = no_change(photos_date)
+            exif_date = no_change(exif_date)
 
         if photos_time != exif_time:
-            photos_time = change_color(photos_time)
-            exif_time = change_color(exif_time)
+            photos_time = change(photos_time)
+            exif_time = change(exif_time)
             diff = True
         else:
-            photos_time = no_change_color(photos_time)
-            exif_time = no_change_color(exif_time)
+            photos_time = no_change(photos_time)
+            exif_time = no_change(exif_time)
 
         if photos_tz != exif_tz:
-            photos_tz = change_color(photos_tz)
-            exif_tz = change_color(exif_tz)
+            photos_tz = change(photos_tz)
+            exif_tz = change(exif_tz)
             diff = True
         else:
-            photos_tz = no_change_color(photos_tz)
-            exif_tz = no_change_color(exif_tz)
+            photos_tz = no_change(photos_tz)
+            exif_tz = no_change(exif_tz)
 
         return ExifDiff(
             diff,

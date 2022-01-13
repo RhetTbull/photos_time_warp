@@ -2,8 +2,10 @@
 
 import datetime
 import os
+import pathlib
 import sys
 from functools import partial
+from textwrap import dedent
 
 import click
 import pytimeparse
@@ -29,11 +31,13 @@ from cloup.constraints import (
 from osxphotos.exiftool import get_exiftool_path
 from photoscript import Photo, PhotosLibrary
 from rich.console import Console
-from rich.highlighter import NullHighlighter
+from rich.themes import Theme
 from rich.traceback import install
 
 from ._version import __version__
-from .compare_exif import ExifDiff, PhotoCompare
+from .color_themes import color_themes
+from .compare_exif import PhotoCompare
+from .darkmode import is_dark_mode
 from .datetime_utils import datetime_naive_to_local, datetime_to_new_tz
 from .exif_updater import ExifUpdater
 from .photosalbum import PhotosAlbum
@@ -44,14 +48,20 @@ from .timeutils import (
     utc_offset_string_to_seconds,
 )
 from .timezones import Timezone
-from .utils import change_color, filename_color, no_change_color, pluralize, uuid_color
+from .utils import pluralize
 
 # name of the script
 APP_NAME = "photos_time_warp"
 
+# Color theme config file
+# In rich.themes.Theme format (ref: https://rich.readthedocs.io/en/stable/reference/theme.html#rich.theme.Theme.read)
+CONFIG_DIR = pathlib.Path(f"~/.config/{APP_NAME}")
+THEME_FILE = CONFIG_DIR / "colors.cfg"
+THEME_FILE = THEME_FILE.expanduser()
+
 # Set up rich console
-_console = Console()
-_console_stderr = Console(stderr=True)
+_console = Console(highlight=False, theme=color_themes["default"])
+_console_stderr = Console(stderr=True, theme=color_themes["default"])
 
 # if True, shows verbose output, controlled via --verbose flag
 _verbose = False
@@ -187,7 +197,19 @@ class PhotosTimeWarpCommand(Command):
         formatter = HelpFormatter()
 
         formatter.write("\n\n")
-        formatter.write_text("")
+        formatter.write_text(
+            f"{APP_NAME} uses colored output which is controlled by the --dark, --light, --plain, and --mono flags. "
+        )
+        formatter.write("\n")
+        color_text = f"""
+            If you don't like the default colors you can specify your own by creating a file named
+            '{CONFIG_DIR}/{THEME_FILE.name}'. If this file exists, photos_time_warp will use the colors specified in
+            this file as the default colors.
+
+            See https://github.com/RhetTbull/photos_time_warp/blob/main/colors.cfg for sample colors.cfg file.
+
+        """
+        formatter.write_text(dedent(color_text))
         help_text += formatter.getvalue()
         return help_text
 
@@ -203,28 +225,36 @@ formatter_settings = HelpFormatter.settings(
 
 
 def update_photo_date_time(
-    photo: Photo, date, time, date_delta, time_delta, plain: bool = False
+    photo: Photo,
+    date,
+    time,
+    date_delta,
+    time_delta,
 ):
     """Update date, time in photo"""
     photo_date = photo.date
     new_photo_date = update_datetime(
         photo_date, date=date, time=time, date_delta=date_delta, time_delta=time_delta
     )
-    filename = photo.filename if plain else filename_color(photo.filename)
-    uuid = photo.uuid if plain else uuid_color(photo.uuid)
+    filename = photo.filename
+    uuid = photo.uuid
     if new_photo_date != photo_date:
         photo.date = new_photo_date
         verbose(
-            f"Updated date/time for photo {filename} ({uuid}) from: {photo_date} to {new_photo_date}"
+            f"Updated date/time for photo [filename]{filename}[/filename] "
+            f"([uuid]{uuid}[/uuid]) from: [time]{photo_date}[/time] to [time]{new_photo_date}[/time]"
         )
     else:
         verbose(
-            f"Skipped date/time update for photo {filename} ({uuid}): nothing to do"
+            f"Skipped date/time update for photo [filename]{filename}[/filename] "
+            f"([uuid]{uuid}[/uuid]): nothing to do"
         )
 
 
 def update_photo_time_for_new_timezone(
-    library_path: str, photo: Photo, new_timezone: Timezone, plain: bool = False
+    library_path: str,
+    photo: Photo,
+    new_timezone: Timezone,
 ):
     """Update time in photo to keep it the same time but in a new timezone
 
@@ -239,18 +269,78 @@ def update_photo_time_for_new_timezone(
     new_photo_date = update_datetime(
         dt=photo_date, time_delta=datetime.timedelta(seconds=delta)
     )
-    filename = photo.filename if plain else filename_color(photo.filename)
-    uuid = photo.uuid if plain else uuid_color(photo.uuid)
+    filename = photo.filename
+    uuid = photo.uuid
     if photo_date != new_photo_date:
         photo.date = new_photo_date
         verbose(
-            f"Adjusted date/time for photo {filename} ({uuid}) to match "
-            f"previous time {photo_date} but in new timezone {new_timezone}."
+            f"Adjusted date/time for photo [filename]{filename}[/filename] ([uuid]{uuid}[/uuid]) to match "
+            f"previous time [time]{photo_date}[time] but in new timezone [tz]{new_timezone}[/tz]."
         )
     else:
         verbose(
-            f"Skipping date/time update for photo {filename} ({photo.uuid}), already matches new timezone {new_timezone}"
+            f"Skipping date/time update for photo [filename]{filename}[/filename] ([uuid]{photo.uuid}[/uuid]), "
+            f"already matches new timezone [tz]{new_timezone}[/tz]"
         )
+
+
+def get_theme(dark, light, mono, plain):
+    """Get the color theme based on the color flags or load from config file"""
+    # figure out which color theme to use
+    theme_name = [
+        name
+        for flag, name in zip(
+            [dark, light, mono, plain], ["dark", "light", "mono", "plain"]
+        )
+        if flag
+    ]
+    theme_name = theme_name[0] if theme_name else "default"
+    if theme_name == "default" and THEME_FILE.is_file():
+        # load theme from file
+        verbose(f"Loading color theme from {THEME_FILE}")
+        try:
+            theme = Theme.read(THEME_FILE)
+        except Exception as e:
+            click.echo(f"Error reading theme file {THEME_FILE}: {e}")
+            sys.exit(1)
+    elif theme_name == "default":
+        # try to auto-detect dark/light mode
+        theme = color_themes["dark"] if is_dark_mode() else color_themes["light"]
+    else:
+        theme = color_themes[theme_name]
+    return theme
+
+
+def configure_console(theme, plain, terminal_width, output_file):
+    """Configure the rich console (global _console) for output"""
+    # redefined depending on --plain or --output-file
+    global _console
+    global _console_stderr
+    terminal_width = terminal_width or (1000 if output_file else None)
+    if plain:
+        # Plain text mode, disable rich output (used for testing)
+        _console = Console(
+            highlighter=False,
+            file=output_file or sys.stdout,
+            width=terminal_width,
+        )
+        _console_stderr = Console(
+            stderr=True,
+            highlight=False,
+            width=terminal_width,
+        )
+    elif output_file:
+        # output to file
+        _console = Console(file=output_file, width=terminal_width, highlight=False)
+        _console_stderr = Console(stderr=True, width=terminal_width)
+    elif terminal_width:
+        # output to terminal with custom width
+        _console = Console(width=terminal_width, highlight=False, theme=theme)
+        _console_stderr = Console(stderr=True, width=terminal_width, theme=theme)
+    else:
+        # output to terminal with default width
+        _console = Console(highlight=False, theme=theme)
+        _console_stderr = Console(stderr=True, theme=theme)
 
 
 @command(cls=PhotosTimeWarpCommand, formatter_settings=formatter_settings)
@@ -388,7 +478,21 @@ def update_photo_time_for_new_timezone(
         "--plain",
         is_flag=True,
         help="Plain text mode.  Do not use rich output.",
-        hidden=True,
+    ),
+    option(
+        "--mono",
+        is_flag=True,
+        help="Monochrome mode.  Do not use colored output.",
+    ),
+    option(
+        "--dark",
+        is_flag=True,
+        help="Dark mode.  Use dark colors.",
+    ),
+    option(
+        "--light",
+        is_flag=True,
+        help="Light mode.  Use light colors.",
     ),
     option(
         "--output-file",
@@ -404,6 +508,7 @@ def update_photo_time_for_new_timezone(
         hidden=True,
     ),
 )
+@constraint(mutually_exclusive, ["plain", "mono", "dark", "light"])
 @constraint(If("match_time", then=requires_one), ["timezone"])
 @constraint(If("add_to_album", then=requires_one), ["compare_exif"])
 @version_option(version=__version__)
@@ -423,6 +528,9 @@ def cli(
     verbose_,
     library,
     plain,
+    mono,
+    dark,
+    light,
     output_file,
     terminal_width,
 ):
@@ -439,36 +547,17 @@ def cli(
     global _verbose
     _verbose = verbose_
 
-    # redefined depending on --plain or --output-file
-    global _console
-    global _console_stderr
-    terminal_width = terminal_width or (1000 if output_file else None)
-    if plain:
-        # Plain text mode, disable rich output (used for testing)
-        _console = Console(
-            highlighter=NullHighlighter(),
-            file=output_file or sys.stdout,
-            width=terminal_width,
-        )
-        _console_stderr = Console(
-            stderr=True,
-            highlighter=NullHighlighter(),
-            width=terminal_width,
-        )
-    elif output_file:
-        # output to file
-        _console = Console(file=output_file, width=terminal_width)
-        _console_stderr = Console(stderr=True, width=terminal_width)
-    elif terminal_width:
-        # output to terminal with custom width
-        _console = Console(width=terminal_width)
-        _console_stderr = Console(stderr=True, width=terminal_width)
+    # if config dir doesn't exist, create it
+    config_dir = CONFIG_DIR.expanduser()
+    if not config_dir.exists():
+        config_dir.mkdir(parents=True)
+
+    theme = get_theme(dark, light, mono, plain)
+    configure_console(theme, plain, terminal_width, output_file)
 
     if any([compare_exif, push_exif, pull_exif]):
         exiftool_path = exiftool_path or get_exiftool_path()
-        verbose(
-            f"exiftool path: {filename_color(exiftool_path) if not plain else exiftool_path}"
-        )
+        verbose(f"exiftool path: [filename]{exiftool_path}[/filename]")
 
     try:
         photos = PhotosLibrary().selection
@@ -496,27 +585,25 @@ def cli(
         time=time,
         date_delta=date_delta,
         time_delta=time_delta,
-        plain=plain,
     )
 
     update_photo_time_for_new_timezone_ = partial(
         update_photo_time_for_new_timezone,
         library_path=library,
-        plain=plain,
     )
 
     if inspect:
         tzinfo = PhotoTimeZone(library_path=library)
         if photos:
             echo(
-                "filename, uuid, photo time (local), photo time, timezone offset, timezone name"
+                "[filename]filename[/filename], [uuid]uuid[/uuid], [time]photo time (local)[/time], [time]photo time[/time], [tz]timezone offset[/tz], [tz]timezone name[/tz]"
             )
         for photo in photos:
             tz_seconds, tz_str, tz_name = tzinfo.get_timezone(photo)
             photo_date_local = datetime_naive_to_local(photo.date)
             photo_date_tz = datetime_to_new_tz(photo_date_local, tz_seconds)
             echo(
-                f"{filename_color(photo.filename)}, {uuid_color(photo.uuid)}, {photo_date_local.strftime(DATETIME_FORMAT)}, {photo_date_tz.strftime(DATETIME_FORMAT)}, {tz_str}, {tz_name}"
+                f"[filename]{photo.filename}[/filename], [uuid]{photo.uuid}[/uuid], [time]{photo_date_local.strftime(DATETIME_FORMAT)}[/time], [time]{photo_date_tz.strftime(DATETIME_FORMAT)}[/time], [tz]{tz_str}[/tz], [tz]{tz_name}[/tz]"
             )
         sys.exit(0)
 
@@ -525,7 +612,9 @@ def cli(
         different_photos = 0
         if photos:
             photocomp = PhotoCompare(
-                library_path=library, verbose=verbose, exiftool_path=exiftool_path
+                library_path=library,
+                verbose=verbose,
+                exiftool_path=exiftool_path,
             )
             if not album:
                 echo(
@@ -539,13 +628,13 @@ def cli(
             )
             if not plain:
                 filename = (
-                    change_color(photo.filename)
+                    f"[change]{photo.filename}[/change]"
                     if diff_results.diff
-                    else no_change_color(photo.filename)
+                    else f"[no_change]{photo.filename}[/no_change]"
                 )
             else:
                 filename = photo.filename
-            uuid = uuid_color(photo.uuid) if not plain else photo.uuid
+            uuid = f"[uuid]{photo.uuid}[/uuid]"
             if album:
                 if diff_results.diff:
                     different_photos += 1

@@ -3,8 +3,6 @@
 # Ensure you have a backup before using!
 # You have been warned.
 
-import datetime
-import math
 import pathlib
 import plistlib
 from typing import Optional, Tuple
