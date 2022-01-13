@@ -77,105 +77,125 @@ Once you've installed `photos_time_warp` with pipx, to upgrade to the latest ver
 $ photos_time_warp --help
 Usage: photos_time_warp [OPTIONS]
 
-  Adjust date/time/timezone of photos in Apple Photos. Changes will be applied
-  to all photos currently selected in Photos. photos_time_warp cannot operate
-  on photos selected in a Smart Album; select photos in a regular album or in
-  the 'All Photos' view.
+  photos_time_warp: adjust date/time/timezone of photos in Apple Photos.
+  Changes will be applied to all photos currently selected in Photos.
+  photos_time_warp cannot operate on photos selected in a Smart Album; select
+  photos in a regular album or in the 'All Photos' view.
 
 Specify one or more command: [at least 1 required]
-  -d, --date DATE           Set date for selected photos. Format is 'YYYY-MM-
-                            DD'.
-  -D, --date-delta DELTA    Adjust date for selected photos by DELTA. Format is
-                            one of: '±D days', '±W weeks', '±D' where D is days
-  -t, --time TIME           Set time for selected photos. Format is one of
-                            'HH:MM:SS', 'HH:MM:SS.fff', 'HH:MM'.
-  -T, --time-delta DELTA    Adjust time for selected photos by DELTA time.
-                            Format is one of '±HH:MM:SS', '±H hours' (or hr),
-                            '±M minutes' (or min), '±S seconds' (or sec), '±S'
-                            (where S is seconds)
-  -z, --timezone TIMEZONE   Set timezone for selected photos as offset from
-                            UTC. Format is one of '±HH:MM', '±H:MM', or
-                            '±HHMM'. The actual time of the photo is not
-                            adjusted which means, somewhat counterintuitively,
-                            that the time in the new timezone will be
-                            different. For example, if photo has time of 12:00
-                            and timezone of GMT+01:00 and new timezone is
-                            specified as '--timezone +02:00' (one hour ahead of
-                            current GMT+01:00 timezone), the photo's new time
-                            will be 13:00 GMT+02:00, which is equivalent to the
-                            old time of 12:00+01:00. This is the same behavior
-                            exhibited by Photos when manually adjusting
-                            timezone in the Get Info window. See also --match-
-                            time.
-  -i, --inspect             Print out the date/time/timezone for each selected
-                            photo without changing any information.
-  -c, --compare-exif        Compare the EXIF date/time/timezone for each
-                            selected photo to the same data in Photos. Requires
-                            the third-party exiftool utility be installed (see
-                            https://exiftool.org/). See also --add-to-album.
-  -p, --push-exif           Push date/time and timezone for selected photos
-                            from Photos to the EXIF metadata in the original
-                            file in the Photos library. Requires the third-
-                            party exiftool utility be installed (see
-                            https://exiftool.org/). Using this option modifies
-                            the *original* file of the image in your Photos
-                            library. --push-exif will be executed after any
-                            other updates are performed on the photo. See also
-                            --pull-exif.
-  -P, --pull-exif           Pull date/time and timezone for selected photos
-                            from EXIF metadata in the original file into Photos
-                            and update the associated data in Photos to match
-                            the EXIF data. --pull-exif will be executed before
-                            any other updates are performed on the photo. It is
-                            possible for images to have missing EXIF data, for
-                            example the date/time could be set but there might
-                            be no timezone set in the EXIF metadata. Missing
-                            data will be handled thusly: if date/time/timezone
-                            are all present in the EXIF data, the photo's
-                            date/time/timezone will be updated. If timezone is
-                            missing but date/time is present, only the photo's
-                            date/time will be updated.  If date/time is missing
-                            but the timezone is present, only the photo's
-                            timezone will be updated. If the date is present
-                            but the time is missing, the time will be set to
-                            00:00:00. Requires the third-party exiftool utility
-                            be installed (see https://exiftool.org/). See also
-                            --push-exif.
+  -d, --date DATE             Set date for selected photos. Format is 'YYYY-MM-
+                              DD'.
+  -D, --date-delta DELTA      Adjust date for selected photos by DELTA. Format
+                              is one of: '±D days', '±W weeks', '±D' where D is
+                              days
+  -t, --time TIME             Set time for selected photos. Format is one of
+                              'HH:MM:SS', 'HH:MM:SS.fff', 'HH:MM'.
+  -T, --time-delta DELTA      Adjust time for selected photos by DELTA time.
+                              Format is one of '±HH:MM:SS', '±H hours' (or hr),
+                              '±M minutes' (or min), '±S seconds' (or sec),
+                              '±S' (where S is seconds)
+  -z, --timezone TIMEZONE     Set timezone for selected photos as offset from
+                              UTC. Format is one of '±HH:MM', '±H:MM', or
+                              '±HHMM'. The actual time of the photo is not
+                              adjusted which means, somewhat
+                              counterintuitively, that the time in the new
+                              timezone will be different. For example, if photo
+                              has time of 12:00 and timezone of GMT+01:00 and
+                              new timezone is specified as '--timezone +02:00'
+                              (one hour ahead of current GMT+01:00 timezone),
+                              the photo's new time will be 13:00 GMT+02:00,
+                              which is equivalent to the old time of
+                              12:00+01:00. This is the same behavior exhibited
+                              by Photos when manually adjusting timezone in the
+                              Get Info window. See also --match-time.
+  -i, --inspect               Print out the date/time/timezone for each
+                              selected photo without changing any information.
+  -c, --compare-exif          Compare the EXIF date/time/timezone for each
+                              selected photo to the same data in Photos.
+                              Requires the third-party exiftool utility be
+                              installed (see https://exiftool.org/). See also
+                              --add-to-album.
+  -p, --push-exif             Push date/time and timezone for selected photos
+                              from Photos to the EXIF metadata in the original
+                              file in the Photos library. Requires the third-
+                              party exiftool utility be installed (see
+                              https://exiftool.org/). Using this option
+                              modifies the *original* file of the image in your
+                              Photos library. --push-exif will be executed
+                              after any other updates are performed on the
+                              photo. See also --pull-exif.
+  -P, --pull-exif             Pull date/time and timezone for selected photos
+                              from EXIF metadata in the original file into
+                              Photos and update the associated data in Photos
+                              to match the EXIF data. --pull-exif will be
+                              executed before any other updates are performed
+                              on the photo. It is possible for images to have
+                              missing EXIF data, for example the date/time
+                              could be set but there might be no timezone set
+                              in the EXIF metadata. Missing data will be
+                              handled thusly: if date/time/timezone are all
+                              present in the EXIF data, the photo's
+                              date/time/timezone will be updated. If timezone
+                              is missing but date/time is present, only the
+                              photo's date/time will be updated.  If date/time
+                              is missing but the timezone is present, only the
+                              photo's timezone will be updated. If the date is
+                              present but the time is missing, the time will be
+                              set to 00:00:00. Requires the third-party
+                              exiftool utility be installed (see
+                              https://exiftool.org/). See also --push-exif.
 
 Options:
-  -m, --match-time          When used with --timezone, adjusts the photo time
-                            so that the timestamp in the new timezone matches
-                            the timestamp in the old timezone. For example, if
-                            photo has time of 12:00 and timezone of GMT+01:00
-                            and new timezone is specified as '--timezone
-                            +02:00' (one hour ahead of current GMT+01:00
-                            timezone), the photo's new time will be 12:00
-                            GMT+02:00. That is, the timezone will have changed
-                            but the timestamp of the photo will match the
-                            previous timestamp. Use --match-time when the
-                            camera's time was correct for the time the photo
-                            was taken but the timezone was missing or wrong and
-                            you want to adjust the timezone while preserving
-                            the photo's time. See also --timezone.
-  -a, --add-to-album ALBUM  When used with --compare-exif, adds any photos with
-                            date/time/timezone differences between Photos/EXIF
-                            to album ALBUM.  If ALBUM does not exist, it will
-                            be created.
-  -V, --verbose             Show verbose output.
+  -m, --match-time            When used with --timezone, adjusts the photo time
+                              so that the timestamp in the new timezone matches
+                              the timestamp in the old timezone. For example,
+                              if photo has time of 12:00 and timezone of
+                              GMT+01:00 and new timezone is specified as '--
+                              timezone +02:00' (one hour ahead of current
+                              GMT+01:00 timezone), the photo's new time will be
+                              12:00 GMT+02:00. That is, the timezone will have
+                              changed but the timestamp of the photo will match
+                              the previous timestamp. Use --match-time when the
+                              camera's time was correct for the time the photo
+                              was taken but the timezone was missing or wrong
+                              and you want to adjust the timezone while
+                              preserving the photo's time. See also --timezone.
+  -a, --add-to-album ALBUM    When used with --compare-exif, adds any photos
+                              with date/time/timezone differences between
+                              Photos/EXIF to album ALBUM.  If ALBUM does not
+                              exist, it will be created.
+  -V, --verbose               Show verbose output.
   -L, --library PHOTOS_LIBRARY_PATH
-                            Path to Photos library (e.g. '~/Pictures/Photos\
-                            Library.photoslibrary'). This is not likely needed
-                            as photos_time_warp will usually be able to locate
-                            the path to the open Photos library. Use --library
-                            only if you get an error that the Photos library
-                            cannot be located.
-  -e, --exiftool-path PATH  Optional path to exiftool executable (will look in
-                            $PATH if not specified) for those options which
-                            require exiftool.
+                              Path to Photos library (e.g. '~/Pictures/Photos\
+                              Library.photoslibrary'). This is not likely
+                              needed as photos_time_warp will usually be able
+                              to locate the path to the open Photos library.
+                              Use --library only if you get an error that the
+                              Photos library cannot be located.
+  -e, --exiftool-path PATH    Optional path to exiftool executable (will look
+                              in $PATH if not specified) for those options
+                              which require exiftool.
+  --plain                     Plain text mode.  Do not use rich output.
+  --mono                      Monochrome mode.  Do not use colored output.
+  --dark                      Dark mode.  Use dark colors.
+  --light                     Light mode.  Use light colors.
+  -o, --output-file FILENAME  Output file. If not specified, output is written
+                              to stdout.
 
 Other options:
-  --version                 Show the version and exit.
-  --help                    Show this message and exit.
+  --version                   Show the version and exit.
+  --help                      Show this message and exit.
+
+photos_time_warp uses colored output which is controlled by the --dark,
+--light, --plain, and --mono flags.
+
+If you don't like the default colors you can specify your own by creating a
+file named '~/.config/photos_time_warp/colors.cfg'. If this file exists,
+photos_time_warp will use the colors specified in this file as the default
+colors.
+
+See https://github.com/RhetTbull/photos_time_warp/blob/main/colors.cfg for
+sample colors.cfg file.
 ```
 
 ## Implementation Details
