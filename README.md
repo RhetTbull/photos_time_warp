@@ -55,6 +55,12 @@ For this to work, you'll need to install the third-party [exiftool](https://exif
 
 *Note on timezones and times*: In Photos, when you change the timezone, Photos assumes the time itself was correct for the previous timezone and adjusts the time accordingly to the new timezone.  E.g. if the photo's time is `13:00` and the timezone is `GMT -07:00` and you adjust the timezone one hour east to `GMT -06:00`, Photos will change the time of the photo to `14:00`.  photos_time_warp follows this behavior.  Using `--match-time` allows you to adjust the timezone but keep the same time without adjustment. For example, if your camera clock was correct but lacked timezone information and you took photos in one timezone but imported them to photos in another, Photos will add the timezone of the computer at time of import.  You can use photos_time_warp to adjust the timezone but keep the time using `--match-time`.
 
+### Compare the date/time/timezone of selected photos with the date/time/timezone in the photos' original EXIF metadata
+
+`photos_time_warp --compare-exif`
+
+![--compare-exif output](docs/images/compare_exif.png "--compare-exif output")
+
 ## Installation
 
 I recommend you install `photos_time_warp` with [pipx](https://github.com/pipxproject/pipx).  The easiest way to do this on a Mac is to use [homebrew](https://brew.sh/):
