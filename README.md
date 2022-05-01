@@ -7,6 +7,8 @@
 
 Batch adjust the date, time, or timezone for photos in Apple Photos. Works on macOS only.
 
+**Note**: *All functionality in photos_time_warp has been added to [osxphotos](https://github.com/RhetTbull/osxphotos) as of 1 May 2022.  I will no longer be maintaining photos_time_warp and will eventually archive this repository.  If you need the functionality in photos_time_warp, I recommend you take a look at osxphotos which offers this same functionality in addition to many other useful tools for working with Photos.*
+
 photos_time_warp operates on photos selected in Apple Photos.  To use it, open Photos, select the photos for which you'd like to adjust the date/time/timezone, then run photos_time_warp from the command line:
 
 `photos_time_warp --date 2021-09-10 --time-delta "-1 hour" --timezone -0700 --verbose`
