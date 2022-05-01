@@ -245,6 +245,25 @@ CATALINA_PHOTOS_5 = {
             "",
         ),
     },
+    "pull_exif_no_data_use_file_time": {
+        # IMG_6506.jpeg (zinnia flowers)
+        "pre": CompareValues(
+            "IMG_6506.jpeg",
+            "7E9DF2EE-A5B0-4077-80EC-30565221A3B9",
+            "2021-10-08 16:11:09",
+            "",
+            "-0700",
+            "",
+        ),
+        "post": CompareValues(
+            "IMG_6506.jpeg",
+            "7E9DF2EE-A5B0-4077-80EC-30565221A3B9",
+            "2021-10-08 16:11:09",
+            "",
+            "-0700",
+            "",
+        ),
+    },
     "compare_video_1": {
         # IMG_6551.mov
         "expected": [

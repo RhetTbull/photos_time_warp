@@ -80,7 +80,7 @@ def copy_photos_library(photos_library=TEST_LIBRARY, delay=0):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_photos():
+def setup_photos_timewarp():
     copy_photos_library(delay=10)
 
 

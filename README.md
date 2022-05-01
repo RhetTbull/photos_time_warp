@@ -145,11 +145,14 @@ Specify one or more command: [at least 1 required]
                               is missing but date/time is present, only the
                               photo's date/time will be updated.  If date/time
                               is missing but the timezone is present, only the
-                              photo's timezone will be updated. If the date is
-                              present but the time is missing, the time will be
-                              set to 00:00:00. Requires the third-party
-                              exiftool utility be installed (see
-                              https://exiftool.org/). See also --push-exif.
+                              photo's timezone will be updated unless --use-
+                              file-time is set in which case, the photo's file
+                              modification time will be used in place of EXIF
+                              date/time. If the date is present but the time is
+                              missing, the time will be set to 00:00:00.
+                              Requires the third-party exiftool utility be
+                              installed (see https://exiftool.org/). See also
+                              --push-exif.
 
 Options:
   -m, --match-time            When used with --timezone, adjusts the photo time
@@ -166,6 +169,9 @@ Options:
                               was taken but the timezone was missing or wrong
                               and you want to adjust the timezone while
                               preserving the photo's time. See also --timezone.
+  -f, --use-file-time         When used with --pull-exif, the file modification
+                              time will be used if date/time is missing from
+                              the EXIF data.
   -a, --add-to-album ALBUM    When used with --compare-exif, adds any photos
                               with date/time/timezone differences between
                               Photos/EXIF to album ALBUM.  If ALBUM does not

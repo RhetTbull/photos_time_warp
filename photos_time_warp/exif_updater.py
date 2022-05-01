@@ -3,7 +3,7 @@
 import datetime
 import re
 from collections import namedtuple
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, Dict
 
 from osxphotos import PhotosDB
 from osxphotos.datetime_utils import datetime_tz_to_utc
@@ -25,8 +25,16 @@ from .utils import noop
 # date/time/timezone extracted from regex as a timezone aware datetime.datetime object
 # default_time is True if the time is not specified in the exif otherwise False (and if True, set to 00:00:00)
 # default_offset is True if timezone offset is not specified in the exif otherwise False (and if True, set to +00:00)
+# used_file_modify_date is True if the date/time is not specified in the exif and the FileModifyDate is used instead
 ExifDateTime = namedtuple(
-    "ExifDateTime", ["datetime", "offset_seconds", "offset_str", "default_time"]
+    "ExifDateTime",
+    [
+        "datetime",
+        "offset_seconds",
+        "offset_str",
+        "default_time",
+        "used_file_modify_date",
+    ],
 )
 
 
@@ -146,11 +154,14 @@ class ExifUpdater:
                     exiftool.setvalue(tag, val)
         return exiftool.warning, exiftool.error
 
-    def update_photos_from_exif(self, photo: Photo) -> None:
+    def update_photos_from_exif(
+        self, photo: Photo, use_file_modify_date: bool = False
+    ) -> None:
         """Update date/time/timezone in Photos library to match the data in EXIF
 
         Args:
             photo: photoscript.Photo object to act on
+            use_file_modify_date: if True, use the file modify date if there's no date/time in the exif data
         """
 
         # photo is the photoscript.Photo object passed in
@@ -172,7 +183,14 @@ class ExifUpdater:
             f"[filename]{photo.filename}[/filename] ([uuid]{photo.uuid}[/uuid])"
         )
 
-        dtinfo = self.get_date_time_offset_from_exif(_photo.path)
+        dtinfo = self.get_date_time_offset_from_exif(
+            _photo.path, use_file_modify_date=use_file_modify_date
+        )
+        if dtinfo.used_file_modify_date:
+            self.verbose(
+                "EXIF date/time missing, using file modify date/time for "
+                f"[filename]{photo.filename}[/filename] ([uuid]{photo.uuid}[/uuid])"
+            )
         if not dtinfo.datetime and not dtinfo.offset_seconds:
             self.verbose(
                 "Skipping update for missing EXIF data in photo "
@@ -209,11 +227,14 @@ class ExifUpdater:
 
         return None
 
-    def get_date_time_offset_from_exif(self, photo_path) -> ExifDateTime:
+    def get_date_time_offset_from_exif(
+        self, photo_path: str, use_file_modify_date: bool = False
+    ) -> ExifDateTime:
         """Get date/time/timezone from EXIF data for a photo
 
         Args:
             photo_path: path to photo to get EXIF data from
+            use_file_modify_date: if True, use the file modify date if there's no date/time in the exif data
 
         Returns:
             ExifDateTime named tuple
@@ -221,14 +242,29 @@ class ExifUpdater:
         """
         exiftool = ExifTool(filepath=photo_path, exiftool=self.exiftool_path)
         exif = exiftool.asdict()
-        return get_exif_date_time_offset(exif)
+        return get_exif_date_time_offset(
+            exif, use_file_modify_date=use_file_modify_date
+        )
 
 
-def get_exif_date_time_offset(exif: dict) -> ExifDateTime:
-    """Get datetime/offset from an exif dict as returned by osxphotos.exiftool.ExifTool.asdict()"""
+def get_exif_date_time_offset(
+    exif: Dict, use_file_modify_date: bool = False
+) -> ExifDateTime:
+    """Get datetime/offset from an exif dict as returned by osxphotos.exiftool.ExifTool.asdict()
+
+    Args:
+        exif: dict of exif data
+        use_file_modify_date: if True, use the file modify date if there's no date/time in the exif data
+    """
+
+    # set to True if no time is found
     default_time = False
+
+    # set to True if no date/time in EXIF and the FileModifyDate is used
+    used_file_modify_date = False
+
     # search these fields in this order for date/time/timezone
-    for dt_str in [
+    time_fields = [
         "EXIF:DateTimeOriginal",
         "EXIF:CreateDate",
         "QuickTime:CreationDate",
@@ -236,7 +272,11 @@ def get_exif_date_time_offset(exif: dict) -> ExifDateTime:
         "IPTC:DateCreated",
         "XMP-exif:DateTimeOriginal",
         "XMP-xmp:CreateDate",
-    ]:
+    ]
+    if use_file_modify_date:
+        time_fields.append("File:FileModifyDate")
+
+    for dt_str in time_fields:
         dt = exif.get(dt_str)
         if dt and dt_str == "IPTC:DateCreated":
             # also need time
@@ -245,7 +285,9 @@ def get_exif_date_time_offset(exif: dict) -> ExifDateTime:
                 time_ = "00:00:00"
                 default_time = True
             dt = f"{dt} {time_}"
+
         if dt:
+            used_file_modify_date = dt_str == "File:FileModifyDate"
             break
     else:
         # no date/time found
@@ -262,9 +304,7 @@ def get_exif_date_time_offset(exif: dict) -> ExifDateTime:
         # make sure we have time
         matched = re.match(r"\d{4}:\d{2}:\d{2}\s(\d{2}:\d{2}:\d{2})", dt)
         if not matched:
-            # make sure we have date
-            matched = re.match(r"^(\d{4}:\d{2}:\d{2})", dt)
-            if matched:
+            if matched := re.match(r"^(\d{4}:\d{2}:\d{2})", dt):
                 # set time to 00:00:00
                 dt = f"{matched.group(1)} 00:00:00"
                 default_time = True
@@ -290,4 +330,6 @@ def get_exif_date_time_offset(exif: dict) -> ExifDateTime:
 
     # format offset in form +/-hhmm
     offset_str = offset.replace(":", "") if offset else ""
-    return ExifDateTime(dt, offset_seconds, offset_str, default_time)
+    return ExifDateTime(
+        dt, offset_seconds, offset_str, default_time, used_file_modify_date
+    )

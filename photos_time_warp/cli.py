@@ -428,7 +428,9 @@ def configure_console(theme, plain, terminal_width, output_file):
         "Missing data will be handled thusly: if date/time/timezone are all present in the EXIF data, "
         "the photo's date/time/timezone will be updated. If timezone is missing but date/time is present, "
         "only the photo's date/time will be updated.  If date/time is missing but the timezone is present, only the "
-        "photo's timezone will be updated. If the date is present but the time is missing, the time will be set to 00:00:00. "
+        "photo's timezone will be updated unless --use-file-time is set in which case, "
+        "the photo's file modification time will be used in place of EXIF date/time. "
+        "If the date is present but the time is missing, the time will be set to 00:00:00. "
         "Requires the third-party exiftool utility be installed (see https://exiftool.org/). "
         "See also --push-exif.",
     ),
@@ -450,6 +452,13 @@ def configure_console(theme, plain, terminal_width, output_file):
         "Use --match-time when the camera's time was correct for the time the photo was taken but the "
         "timezone was missing or wrong and you want to adjust the timezone while preserving the photo's time. "
         "See also --timezone.",
+    ),
+    option(
+        "--use-file-time",
+        "-f",
+        is_flag=True,
+        help="When used with --pull-exif, the file modification time will be used if date/time "
+        "is missing from the EXIF data. ",
     ),
     option(
         "--add-to-album",
@@ -511,6 +520,7 @@ def configure_console(theme, plain, terminal_width, output_file):
 @constraint(mutually_exclusive, ["plain", "mono", "dark", "light"])
 @constraint(If("match_time", then=requires_one), ["timezone"])
 @constraint(If("add_to_album", then=requires_one), ["compare_exif"])
+@constraint(If("use_file_time", then=requires_one), ["pull_exif"])
 @version_option(version=__version__)
 def cli(
     date,
@@ -523,6 +533,7 @@ def cli(
     push_exif,
     pull_exif,
     match_time,
+    use_file_time,
     add_to_album,
     exiftool_path,
     verbose_,
@@ -677,7 +688,9 @@ def cli(
     with click.progressbar(photos, file=fp) as bar:
         for p in bar:
             if pull_exif:
-                exif_updater.update_photos_from_exif(p)
+                exif_updater.update_photos_from_exif(
+                    p, use_file_modify_date=use_file_time
+                )
             if any([date, time, date_delta, time_delta]):
                 update_photo_date_time_(p)
             if match_time:

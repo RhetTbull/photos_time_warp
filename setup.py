@@ -4,8 +4,8 @@ from setuptools import setup, find_packages
 import sys
 import os.path
 
-if sys.version_info < (3, 7, 0):
-    sys.stderr.write("ERROR: You need Python 3.7 or later to use photos_time_warp.\n")
+if sys.version_info < (3, 8, 0):
+    sys.stderr.write("ERROR: You need Python 3.8 or later to use photos_time_warp.\n")
     exit(1)
 
 # we'll import stuff from the source tree, let's ensure is on the sys path
@@ -58,7 +58,7 @@ setup(
         "rich>=10.6.0,<12.0.0",
         "tenacity>=8.0.1,<9.0.0",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     entry_points={
         "console_scripts": [
             "photos_time_warp=photos_time_warp.cli:cli",

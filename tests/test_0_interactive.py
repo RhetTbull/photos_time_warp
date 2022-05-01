@@ -538,7 +538,7 @@ def test_select_zinnias(photoslib, suspend_capture):
 
 
 def test_pull_exif_no_data(photoslib, suspend_capture, output_file):
-    """Test --pull-exif when photo has data in EXIF"""
+    """Test --pull-exif when photo has no data in EXIF"""
     pre_test = TEST_DATA["pull_exif_no_data"]["pre"]
     post_test = TEST_DATA["pull_exif_no_data"]["post"]
 
@@ -573,6 +573,45 @@ def test_pull_exif_no_data(photoslib, suspend_capture, output_file):
     )
     output_values = parse_compare_exif(output_file)
     assert output_values[0] == post_test
+
+def test_pull_exif_no_data_use_file_time(photoslib, suspend_capture, output_file):
+    """Test --pull-exif when photo has no data in EXIF with --use-file-time"""
+    pre_test = TEST_DATA["pull_exif_no_data_use_file_time"]["pre"]
+    post_test = TEST_DATA["pull_exif_no_data_use_file_time"]["post"]
+
+    from photos_time_warp.cli import cli
+
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        ["--compare-exif", "--plain", "-o", output_file],
+        terminal_width=TERMINAL_WIDTH,
+    )
+    output_values = parse_compare_exif(output_file)
+    assert output_values[0] == pre_test
+
+    result = runner.invoke(
+        cli,
+        [
+            "--pull-exif",
+            "--plain",
+            "--verbose",
+            "--use-file-time",
+        ],
+        terminal_width=TERMINAL_WIDTH,
+    )
+    assert result.exit_code == 0
+    assert "EXIF date/time missing, using file modify date/time" in result.output
+
+    result = runner.invoke(
+        cli,
+        ["--compare-exif", "--plain", "-o", output_file],
+        terminal_width=TERMINAL_WIDTH,
+    )
+    output_values = parse_compare_exif(output_file)
+    assert output_values[0] == post_test
+
 
 
 def test_select_sunset_video(photoslib, suspend_capture):
